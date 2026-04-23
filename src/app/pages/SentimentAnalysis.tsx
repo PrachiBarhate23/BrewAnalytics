@@ -1,4 +1,5 @@
-import { Filter, Download } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Filter, Download, Send, Activity } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -12,81 +13,84 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const sentimentTrendData = [
-  { date: "Jan", positive: 58, neutral: 30, negative: 12 },
-  { date: "Feb", positive: 62, neutral: 28, negative: 10 },
-  { date: "Mar", positive: 60, neutral: 27, negative: 13 },
-  { date: "Apr", positive: 65, neutral: 25, negative: 10 },
-  { date: "May", positive: 63, neutral: 26, negative: 11 },
-  { date: "Jun", positive: 67, neutral: 24, negative: 9 },
-  { date: "Jul", positive: 65, neutral: 25, negative: 10 },
-];
-
-const aspectSentimentData = [
-  { aspect: "Food Quality", positive: 85, negative: 15 },
-  { aspect: "Service", positive: 72, negative: 28 },
-  { aspect: "Ambiance", positive: 78, negative: 22 },
-  { aspect: "Price", positive: 58, negative: 42 },
-  { aspect: "Cleanliness", positive: 88, negative: 12 },
-];
-
-const recentReviews = [
-  {
-    id: 1,
-    customer: "Sarah Johnson",
-    rating: 5,
-    sentiment: "Positive",
-    text: "Amazing coffee and wonderful atmosphere! The barista was very friendly.",
-    date: "2 hours ago",
-  },
-  {
-    id: 2,
-    customer: "Mike Chen",
-    rating: 4,
-    sentiment: "Positive",
-    text: "Great croissants, but the wait time was a bit long during lunch rush.",
-    date: "5 hours ago",
-  },
-  {
-    id: 3,
-    customer: "Emily Davis",
-    rating: 3,
-    sentiment: "Neutral",
-    text: "Coffee was good but prices are slightly higher than competitors.",
-    date: "1 day ago",
-  },
-  {
-    id: 4,
-    customer: "James Wilson",
-    rating: 5,
-    sentiment: "Positive",
-    text: "Best cappuccino in town! Love the cozy ambiance and fast service.",
-    date: "1 day ago",
-  },
-  {
-    id: 5,
-    customer: "Lisa Anderson",
-    rating: 2,
-    sentiment: "Negative",
-    text: "Service was slow and coffee was lukewarm. Expected better quality.",
-    date: "2 days ago",
-  },
-];
-
-const wordCloudWords = [
-  { text: "Coffee", size: 48 },
-  { text: "Friendly", size: 36 },
-  { text: "Quality", size: 42 },
-  { text: "Cozy", size: 32 },
-  { text: "Fresh", size: 38 },
-  { text: "Delicious", size: 44 },
-  { text: "Service", size: 34 },
-  { text: "Ambiance", size: 30 },
-  { text: "Amazing", size: 36 },
-  { text: "Great", size: 40 },
+const COLOR_PALETTE = [
+  "text-blue-600",
+  "text-emerald-600",
+  "text-amber-600",
+  "text-rose-600",
+  "text-indigo-600",
+  "text-teal-600",
+  "text-orange-600",
 ];
 
 export function SentimentAnalysis() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [filterWord, setFilterWord] = useState<string | null>(null);
+
+  // Live prediction state
+  const [liveReview, setLiveReview] = useState("");
+  const [predictionResult, setPredictionResult] = useState<any>(null);
+  const [predicting, setPredicting] = useState(false);
+  const [predictError, setPredictError] = useState("");
+
+  const handlePredict = async () => {
+    if (!liveReview.trim()) return;
+    setPredicting(true);
+    setPredictError("");
+    setPredictionResult(null);
+    try {
+      const res = await fetch("/api/sentiment/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: liveReview }),
+      });
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      setPredictionResult(json);
+    } catch (err: any) {
+      setPredictError(err.message || "Failed to predict");
+    } finally {
+      setPredicting(false);
+    }
+  };
+
+  useEffect(() => {
+    // We keep loading true during filter changes to show fresh state
+    setLoading(true);
+    const summaryUrl = filterWord 
+      ? `/api/sentiment/summary?word=${encodeURIComponent(filterWord)}` 
+      : "/api/sentiment/summary";
+
+    Promise.all([
+      fetch(summaryUrl).then((res) => res.json()),
+      fetch("/api/sentiment/aspects").then((res) => res.json())
+    ])
+      .then(([summaryJson, aspectsJson]) => {
+        setData({
+          ...summaryJson,
+          aspectData: aspectsJson.aspectData
+        });
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching sentiment data:", err);
+        setLoading(false);
+      });
+  }, [filterWord]);
+
+  if (loading) {
+    return <div className="p-8">Loading...</div>;
+  }
+
+  // Fallbacks if data fails
+  const overview = data?.overview || { positive: 0, neutral: 0, negative: 0, positive_change: 0, neutral_change: 0, negative_change: 0 };
+  const trendData = data?.trendData || [];
+  const recentReviews = data?.recentReviews || [];
+  const aspectSentimentData = data?.aspectData || [];
+  const wordCloud = data?.wordCloud || [];
+
   return (
     <div className="p-8">
       {/* Page Header */}
@@ -114,8 +118,8 @@ export function SentimentAnalysis() {
             <h3 className="text-sm font-medium text-green-800">Positive Sentiment</h3>
             <span className="text-2xl">😊</span>
           </div>
-          <p className="text-3xl font-bold text-green-900 mb-1">65%</p>
-          <p className="text-sm text-green-700">+8% from last month</p>
+          <p className="text-3xl font-bold text-green-900 mb-1">{overview.positive}%</p>
+          <p className="text-sm text-green-700">{overview.positive_change >= 0 ? '+' : ''}{overview.positive_change}% from last month</p>
         </div>
 
         <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl border border-yellow-200 p-6">
@@ -123,8 +127,8 @@ export function SentimentAnalysis() {
             <h3 className="text-sm font-medium text-yellow-800">Neutral Sentiment</h3>
             <span className="text-2xl">😐</span>
           </div>
-          <p className="text-3xl font-bold text-yellow-900 mb-1">25%</p>
-          <p className="text-sm text-yellow-700">-2% from last month</p>
+          <p className="text-3xl font-bold text-yellow-900 mb-1">{overview.neutral}%</p>
+          <p className="text-sm text-yellow-700">{overview.neutral_change >= 0 ? '+' : ''}{overview.neutral_change}% from last month</p>
         </div>
 
         <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl border border-red-200 p-6">
@@ -132,8 +136,8 @@ export function SentimentAnalysis() {
             <h3 className="text-sm font-medium text-red-800">Negative Sentiment</h3>
             <span className="text-2xl">😞</span>
           </div>
-          <p className="text-3xl font-bold text-red-900 mb-1">10%</p>
-          <p className="text-sm text-red-700">-6% from last month</p>
+          <p className="text-3xl font-bold text-red-900 mb-1">{overview.negative}%</p>
+          <p className="text-sm text-red-700">{overview.negative_change >= 0 ? '+' : ''}{overview.negative_change}% from last month</p>
         </div>
       </div>
 
@@ -143,7 +147,7 @@ export function SentimentAnalysis() {
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Sentiment Trend Over Time</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={sentimentTrendData}>
+            <AreaChart data={trendData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis dataKey="date" stroke="#6B7280" />
               <YAxis stroke="#6B7280" />
@@ -206,25 +210,168 @@ export function SentimentAnalysis() {
         </div>
       </div>
 
-      {/* Word Cloud Simulation */}
+      {/* Live AI Prediction */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Activity className="w-5 h-5 text-[#6F4E37]" />
+          Live AI Sentiment Prediction (BERT Model)
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Type or paste a customer review below to test the fine-tuned BERT sentiment model in real-time.
+        </p>
+        
+        <div className="flex gap-3 mb-4">
+          <textarea
+            className="flex-1 border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#1ABC9C] focus:border-[#1ABC9C] outline-none"
+            rows={3}
+            placeholder="E.g., The coffee was amazing, but the service was a bit slow."
+            value={liveReview}
+            onChange={(e) => setLiveReview(e.target.value)}
+          />
+          <button
+            onClick={handlePredict}
+            disabled={predicting || !liveReview.trim()}
+            className="self-end flex items-center gap-2 px-6 py-3 bg-[#6F4E37] text-white rounded-lg hover:bg-[#5d4230] transition-colors disabled:opacity-50"
+          >
+            {predicting ? "Analyzing..." : (
+              <>
+                Analyze <Send className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </div>
+
+        {predictError && (
+          <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg mb-4">
+            {predictError}
+          </div>
+        )}
+
+        {predictionResult && (
+          <div className="bg-gray-50 rounded-lg p-6 border border-gray-100 mt-4 animate-in fade-in zoom-in duration-300">
+            <div className="flex flex-col md:flex-row gap-8">
+              {/* Sentiment Result */}
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-600 mb-2">Predicted Sentiment</p>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-4xl shadow-sm rounded-full bg-white p-2 border border-gray-200">
+                    {predictionResult.sentiment === "Positive" ? "😊" : predictionResult.sentiment === "Negative" ? "😞" : "😐"}
+                  </span>
+                  <div>
+                    <p className={`text-2xl font-bold ${
+                      predictionResult.sentiment === "Positive" ? "text-green-600" :
+                      predictionResult.sentiment === "Negative" ? "text-red-600" : "text-yellow-600"
+                    }`}>
+                      {predictionResult.sentiment}
+                    </p>
+                    <p className="text-sm font-medium text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded-full inline-block mt-1">
+                      Confidence: {(predictionResult.confidence * 100).toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Score breakdown */}
+                <div className="space-y-3 bg-white p-4 rounded-lg border border-gray-200">
+                  <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">Raw Scores</p>
+                  <div className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                    <span className="w-16">Positive</span>
+                    <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                      <div className="h-full bg-green-500 transition-all duration-1000" style={{ width: `${predictionResult.scores.Positive * 100}%` }}></div>
+                    </div>
+                    <span className="w-12 text-right">{(predictionResult.scores.Positive * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                    <span className="w-16">Neutral</span>
+                    <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                      <div className="h-full bg-yellow-400 transition-all duration-1000" style={{ width: `${predictionResult.scores.Neutral * 100}%` }}></div>
+                    </div>
+                    <span className="w-12 text-right">{(predictionResult.scores.Neutral * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                    <span className="w-16">Negative</span>
+                    <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                      <div className="h-full bg-red-500 transition-all duration-1000" style={{ width: `${predictionResult.scores.Negative * 100}%` }}></div>
+                    </div>
+                    <span className="w-12 text-right">{(predictionResult.scores.Negative * 100).toFixed(0)}%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Detected Aspects */}
+              <div className="flex-1 border-t md:border-t-0 md:border-l border-gray-200 pt-6 md:pt-0 md:pl-8">
+                <p className="text-sm font-medium text-gray-600 mb-3">Detected Focus Areas (Aspects)</p>
+                {predictionResult.aspects && predictionResult.aspects.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {predictionResult.aspects.map((aspect: string, i: number) => (
+                      <span key={i} className="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-blue-800 text-sm font-semibold rounded-lg shadow-sm">
+                        {aspect}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 italic">No specific aspects detected.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Interactive Word Cloud */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Most Frequent Words in Reviews</h3>
-        <div className="flex flex-wrap gap-4 justify-center items-center min-h-[200px] bg-gradient-to-br from-[#F5E6D3]/30 to-[#F9FAFB] rounded-lg p-8">
-          {wordCloudWords.map((word, index) => (
-            <span
-              key={index}
-              className="font-semibold text-[#6F4E37] hover:text-[#1ABC9C] transition-colors cursor-pointer"
-              style={{ fontSize: `${word.size}px` }}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Most Frequent Words in Reviews</h3>
+          {filterWord && (
+            <button 
+              onClick={() => setFilterWord(null)}
+              className="text-sm font-medium text-blue-600 hover:text-blue-800"
             >
-              {word.text}
-            </span>
-          ))}
+              Reset View
+            </button>
+          )}
+        </div>
+        <p className="text-sm text-gray-500 mb-6 italic">Click a word to filter the entire dashboard by that keyword.</p>
+        <div className="flex flex-wrap gap-4 justify-center items-center min-h-[220px] bg-gradient-to-br from-gray-50 to-white rounded-lg p-8 border border-gray-100 shadow-inner">
+          {wordCloud.length > 0 ? wordCloud.map((word: any, index: number) => {
+            const colorClass = COLOR_PALETTE[index % COLOR_PALETTE.length];
+            const isSelected = filterWord === word.text;
+            return (
+              <span
+                key={index}
+                onClick={() => setFilterWord(isSelected ? null : word.text)}
+                className={`font-bold transition-all duration-300 cursor-pointer hover:scale-110 px-3 py-1 rounded-lg ${colorClass} ${
+                  isSelected ? "bg-blue-50 ring-2 ring-blue-200 scale-110 shadow-sm" : "hover:bg-gray-50"
+                }`}
+                style={{ fontSize: `${word.size}px` }}
+              >
+                {word.text}
+              </span>
+            );
+          }) : (
+            <p className="text-gray-500 italic">No significant words extracted yet.</p>
+          )}
         </div>
       </div>
 
-      {/* Recent Reviews Table */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Customer Reviews</h3>
+      {/* Customer Reviews Table */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">
+            {filterWord ? (
+              <span className="flex items-center gap-2">
+                Reviews containing <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">"{filterWord}"</span>
+              </span>
+            ) : "Recent Customer Reviews"}
+          </h3>
+          {filterWord && (
+            <button 
+              onClick={() => setFilterWord(null)}
+              className="text-sm font-medium text-gray-500 hover:text-gray-700 bg-gray-100 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Clear Filter
+            </button>
+          )}
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>

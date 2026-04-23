@@ -44,3 +44,10 @@ sentiment_model/
 *.h5
 *.onnx
 *.xlsx
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo

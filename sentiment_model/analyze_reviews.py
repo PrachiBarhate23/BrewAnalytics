@@ -65,7 +65,7 @@ class SentimentClassifier:
         print(f"  Model loaded on {self.device}")
 
     def classify(self, text: str) -> dict:
-        enc = self.tokenizer.encode_plus(
+        enc = self.tokenizer(
             str(text), add_special_tokens=True, max_length=MAX_LENGTH,
             padding="max_length", truncation=True,
             return_attention_mask=True, return_tensors="pt",
@@ -175,16 +175,25 @@ def main():
     print("\n  Classifying all reviews with BERT...")
     sentiments = []
     confidences = []
+    pos_scores = []
+    neu_scores = []
+    neg_scores = []
 
     for i, row in df.iterrows():
         result = classifier.classify(row["Review"])
         sentiments.append(result["sentiment"])
         confidences.append(result["confidence"])
+        pos_scores.append(result["pos_score"])
+        neu_scores.append(result["neu_score"])
+        neg_scores.append(result["neg_score"])
         if (i + 1) % 200 == 0:
             print(f"    Processed {i + 1}/{len(df)} reviews...")
 
     df["predicted_sentiment"] = sentiments
     df["confidence"] = confidences
+    df["pos_score"] = pos_scores
+    df["neu_score"] = neu_scores
+    df["neg_score"] = neg_scores
 
     print(f"  Done! All {len(df)} reviews classified.\n")
 

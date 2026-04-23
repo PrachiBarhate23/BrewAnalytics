@@ -1,89 +1,70 @@
+import { useState, useEffect } from "react";
 import { ArrowRight, TrendingUp } from "lucide-react";
 
-const marketBasketRules = [
-  {
-    antecedent: "Cappuccino",
-    consequent: "Croissant",
-    support: 0.35,
-    confidence: 0.68,
-    lift: 1.8,
-    icon: "☕",
-    iconPair: "🥐",
-  },
-  {
-    antecedent: "Latte",
-    consequent: "Muffin",
-    support: 0.28,
-    confidence: 0.62,
-    lift: 1.6,
-    icon: "☕",
-    iconPair: "🧁",
-  },
-  {
-    antecedent: "Espresso",
-    consequent: "Biscotti",
-    support: 0.22,
-    confidence: 0.58,
-    lift: 1.5,
-    icon: "☕",
-    iconPair: "🍪",
-  },
-  {
-    antecedent: "Croissant",
-    consequent: "Orange Juice",
-    support: 0.31,
-    confidence: 0.55,
-    lift: 1.4,
-    icon: "🥐",
-    iconPair: "🧃",
-  },
-  {
-    antecedent: "Sandwich",
-    consequent: "Iced Coffee",
-    support: 0.26,
-    confidence: 0.64,
-    lift: 1.7,
-    icon: "🥪",
-    iconPair: "🧊",
-  },
-];
-
-const frequentItemsets = [
-  { items: ["Cappuccino", "Croissant", "Orange Juice"], support: 0.18, count: 425 },
-  { items: ["Latte", "Muffin"], support: 0.28, count: 658 },
-  { items: ["Espresso", "Biscotti"], support: 0.22, count: 518 },
-  { items: ["Sandwich", "Iced Coffee", "Chips"], support: 0.15, count: 353 },
-  { items: ["Cappuccino", "Cake"], support: 0.20, count: 471 },
-];
-
-const bundleOpportunities = [
-  {
-    name: "Morning Starter",
-    items: ["Cappuccino", "Croissant"],
-    currentRevenue: "$12.50",
-    bundlePrice: "$10.99",
-    potentialIncrease: "+24%",
-    confidence: "High",
-  },
-  {
-    name: "Afternoon Delight",
-    items: ["Latte", "Muffin"],
-    currentRevenue: "$11.00",
-    bundlePrice: "$9.49",
-    potentialIncrease: "+18%",
-    confidence: "High",
-  },
-  {
-    name: "Quick Lunch",
-    items: ["Sandwich", "Iced Coffee"],
-    currentRevenue: "$14.00",
-    bundlePrice: "$12.49",
-    potentialIncrease: "+21%",
-    confidence: "Medium",
-  },
-];
-
 export function MarketBasket() {
+  const [marketBasketRules, setMarketBasketRules] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/basket/rules")
+      .then(res => res.json())
+      .then(json => {
+        if (json.rules) {
+          // ensure icons are mapped if the backend doesn't send them
+          const rulesWithIcons = json.rules.map((rule: any) => ({
+            ...rule,
+            icon: rule.icon || "☕",
+            iconPair: rule.iconPair || "🥐"
+          }));
+          setMarketBasketRules(rulesWithIcons);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Error fetching rules:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  const frequentItemsets = [
+    { items: ["Cappuccino", "Croissant", "Orange Juice"], support: 0.18, count: 425 },
+    { items: ["Latte", "Muffin"], support: 0.28, count: 658 },
+    { items: ["Espresso", "Biscotti"], support: 0.22, count: 518 },
+    { items: ["Sandwich", "Iced Coffee", "Chips"], support: 0.15, count: 353 },
+    { items: ["Cappuccino", "Cake"], support: 0.20, count: 471 },
+  ];
+
+  const bundleOpportunities = [
+    {
+      name: "Morning Starter",
+      items: ["Cappuccino", "Croissant"],
+      currentRevenue: "$12.50",
+      bundlePrice: "$10.99",
+      potentialIncrease: "+24%",
+      confidence: "High",
+    },
+    {
+      name: "Afternoon Delight",
+      items: ["Latte", "Muffin"],
+      currentRevenue: "$11.00",
+      bundlePrice: "$9.49",
+      potentialIncrease: "+18%",
+      confidence: "High",
+    },
+    {
+      name: "Quick Lunch",
+      items: ["Sandwich", "Iced Coffee"],
+      currentRevenue: "$14.00",
+      bundlePrice: "$12.49",
+      potentialIncrease: "+21%",
+      confidence: "Medium",
+    },
+  ];
+
+  if (loading) {
+    return <div className="p-8">Loading Market Basket Rules...</div>;
+  }
+
   return (
     <div className="p-8">
       {/* Page Header */}

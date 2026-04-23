@@ -1,270 +1,412 @@
-import { TrendingUp, Calendar } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Area,
-  AreaChart,
+  TrendingUp, Calendar, BarChart2, Cpu,
+  ArrowUpRight, ArrowDownRight, RefreshCw, Info
+} from "lucide-react";
+import {
+  ComposedChart, Line, Area,
+  BarChart, Bar, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, ReferenceLine
 } from "recharts";
 
-const revenueForecastData = [
-  { month: "Jan", actual: 45000, forecast: null },
-  { month: "Feb", actual: 52000, forecast: null },
-  { month: "Mar", actual: 48000, forecast: null },
-  { month: "Apr", actual: 61000, forecast: null },
-  { month: "May", actual: 55000, forecast: null },
-  { month: "Jun", actual: 67000, forecast: null },
-  { month: "Jul", actual: 72000, forecast: null },
-  { month: "Aug", actual: 68000, forecast: null },
-  { month: "Sep", actual: null, forecast: 74000, lower: 70000, upper: 78000 },
-  { month: "Oct", actual: null, forecast: 78000, lower: 73000, upper: 83000 },
-  { month: "Nov", actual: null, forecast: 82000, lower: 76000, upper: 88000 },
-  { month: "Dec", actual: null, forecast: 95000, lower: 88000, upper: 102000 },
+// ─── INR formatter ────────────────────────────────────────────────────────────
+const inr = (n: number) =>
+  n >= 1_00_00_000
+    ? `₹${(n / 1_00_00_000).toFixed(1)}Cr`
+    : n >= 1_00_000
+    ? `₹${(n / 1_00_000).toFixed(1)}L`
+    : `₹${n.toLocaleString("en-IN")}`;
+
+// ─── Outlet colours ────────────────────────────────────────────────────────────
+const COLORS = [
+  "#6F4E37","#1ABC9C","#3B82F6","#F59E0B","#EF4444",
+  "#8B5CF6","#EC4899","#10B981","#F97316",
 ];
 
-const itemDemandForecast = [
-  { item: "Cappuccino", current: 2845, forecast: 3120, change: "+9.7%" },
-  { item: "Croissant", current: 2145, forecast: 2380, change: "+11.0%" },
-  { item: "Latte", current: 1980, forecast: 2140, change: "+8.1%" },
-  { item: "Espresso", current: 1756, forecast: 1890, change: "+7.6%" },
-  { item: "Muffin", current: 1432, forecast: 1545, change: "+7.9%" },
-];
-
-const seasonalityData = [
-  { day: "Mon", morning: 65, afternoon: 45, evening: 30 },
-  { day: "Tue", morning: 68, afternoon: 48, evening: 32 },
-  { day: "Wed", morning: 72, afternoon: 52, evening: 35 },
-  { day: "Thu", morning: 70, afternoon: 55, evening: 38 },
-  { day: "Fri", morning: 75, afternoon: 60, evening: 50 },
-  { day: "Sat", morning: 85, afternoon: 70, evening: 55 },
-  { day: "Sun", morning: 80, afternoon: 65, evening: 45 },
-];
+// ─── Custom Tooltip for forecast chart ────────────────────────────────────────
+const ForecastTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-xs">
+      <p className="font-bold text-gray-800 mb-2">{label}</p>
+      {payload.map((p: any, i: number) => (
+        <div key={i} className="flex items-center gap-2 mb-0.5">
+          <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+          <span className="text-gray-600">{p.name}:</span>
+          <span className="font-semibold text-gray-900">
+            {p.value != null ? inr(p.value) : "—"}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export function SalesForecasting() {
+  const [data, setData]         = useState<any>(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState("");
+  const [horizon, setHorizon]   = useState(90);
+  const [fetching, setFetching] = useState(false);
+
+  const load = useCallback((h: number) => {
+    setFetching(true);
+    setError("");
+    fetch(`/api/sales/forecast?horizon=${h}`)
+      .then(r => r.json())
+      .then(d => { setData(d); setFetching(false); setLoading(false); })
+      .catch(e => { setError(e.message); setFetching(false); setLoading(false); });
+  }, []);
+
+  useEffect(() => { load(horizon); }, []);
+
+  const changeHorizon = (h: number) => { setHorizon(h); load(h); };
+
+  // ── Loading / Error ──────────────────────────────────────────────────────────
+  if (loading) return (
+    <div className="p-8 min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-[#1ABC9C] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-gray-600 font-medium">Running Forecast Model…</p>
+        <p className="text-gray-400 text-sm mt-1">STL Decomposition + ARIMA(1,1,1)</p>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="p-8">
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+        <p className="text-red-600 font-semibold mb-2">Forecast model error</p>
+        <p className="text-red-400 text-sm mb-4">{error}</p>
+        <button onClick={() => load(horizon)}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+          Retry
+        </button>
+      </div>
+    </div>
+  );
+
+  const kpis          = data?.kpis                || {};
+  const chartData     = data?.chart_data          || [];
+  const weekSeason    = data?.weekly_seasonality  || [];
+  const monthSeason   = data?.monthly_seasonality || [];
+  const outletFC      = data?.outlet_forecasts    || [];
+  const itemDemand    = data?.item_demand_forecast || [];
+  const modelInfo     = data?.model_info          || {};
+
+  // Confidence colour
+  const confColor = kpis.model_confidence >= 80
+    ? "text-emerald-600" : kpis.model_confidence >= 60
+    ? "text-amber-500"   : "text-red-500";
+
   return (
     <div className="p-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Sales Forecasting</h1>
-        <p className="text-gray-600">Predict future revenue and demand using AI-powered analytics</p>
-      </div>
-
-      {/* Forecast Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-[#6F4E37] to-[#5d4230] rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-5 h-5" />
-            <h3 className="text-sm font-medium opacity-90">Next Month Forecast</h3>
-          </div>
-          <p className="text-3xl font-bold mb-1">$74,000</p>
-          <p className="text-sm opacity-80">+8.8% from current month</p>
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">Sales Forecasting</h1>
+          <p className="text-gray-500 text-sm flex items-center gap-1.5">
+            <Cpu className="w-3.5 h-3.5" />
+            {modelInfo.method || "STL + ARIMA"} · Trained on {modelInfo.fitted_on_days} days
+          </p>
         </div>
 
-        <div className="bg-gradient-to-br from-[#1ABC9C] to-[#17a085] rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar className="w-5 h-5" />
-            <h3 className="text-sm font-medium opacity-90">Q4 Projection</h3>
-          </div>
-          <p className="text-3xl font-bold mb-1">$249,000</p>
-          <p className="text-sm opacity-80">Confidence: 87%</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-5 h-5" />
-            <h3 className="text-sm font-medium opacity-90">YoY Growth Rate</h3>
-          </div>
-          <p className="text-3xl font-bold mb-1">+18.5%</p>
-          <p className="text-sm opacity-80">Projected annual increase</p>
+        {/* Horizon picker */}
+        <div className="flex items-center gap-2">
+          {[30,60,90,180].map(h => (
+            <button key={h} onClick={() => changeHorizon(h)}
+              disabled={fetching}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all
+                ${horizon === h
+                  ? "bg-[#6F4E37] text-white shadow"
+                  : "border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+              {h}d
+            </button>
+          ))}
+          <button onClick={() => load(horizon)} disabled={fetching}
+            className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <RefreshCw className={`w-4 h-4 text-gray-500 ${fetching ? "animate-spin" : ""}`} />
+          </button>
         </div>
       </div>
 
-      {/* Revenue Forecast Chart */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
+      {/* ── KPI Summary Cards ────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        {/* Next period forecast */}
+        <div className="bg-gradient-to-br from-[#6F4E37] to-[#4a3325] rounded-xl p-5 text-white shadow-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-4 h-4 opacity-80" />
+            <span className="text-xs font-medium opacity-80">Next {horizon}d Forecast</span>
+          </div>
+          <p className="text-3xl font-bold mb-1">{inr(kpis.next_30_forecast || 0)}</p>
+          <p className="text-xs opacity-70">Current period: {inr(kpis.current_30_actual || 0)}</p>
+        </div>
+
+        {/* Growth rate */}
+        <div className="bg-gradient-to-br from-[#1ABC9C] to-[#0e8a6e] rounded-xl p-5 text-white shadow-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <Calendar className="w-4 h-4 opacity-80" />
+            <span className="text-xs font-medium opacity-80">Projected Growth</span>
+          </div>
+          <p className="text-3xl font-bold mb-1">
+            {kpis.growth_rate >= 0 ? "+" : ""}{kpis.growth_rate}%
+          </p>
+          <p className="text-xs opacity-70">vs current period</p>
+        </div>
+
+        {/* YoY growth */}
+        <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl p-5 text-white shadow-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <BarChart2 className="w-4 h-4 opacity-80" />
+            <span className="text-xs font-medium opacity-80">YoY Growth</span>
+          </div>
+          <p className="text-3xl font-bold mb-1">
+            {kpis.yoy_growth >= 0 ? "+" : ""}{kpis.yoy_growth}%
+          </p>
+          <p className="text-xs opacity-70">2024 → 2025 comparison</p>
+        </div>
+
+        {/* Model confidence */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <Cpu className="w-4 h-4 text-gray-400" />
+            <span className="text-xs font-medium text-gray-500">Model Confidence</span>
+          </div>
+          <p className={`text-3xl font-bold mb-1 ${confColor}`}>{kpis.model_confidence}%</p>
+          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full ${kpis.model_confidence >= 80 ? "bg-emerald-500" : "bg-amber-400"}`}
+              style={{ width: `${kpis.model_confidence}%` }} />
+          </div>
+          <p className="text-xs text-gray-400 mt-1">Based on residual MAPE</p>
+        </div>
+      </div>
+
+      {/* ── Forecast Chart: Actual + CI Band + Forecast ──────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Revenue Forecast with Confidence Interval</h3>
-            <p className="text-sm text-gray-600 mt-1">Historical data (solid) vs predicted values (dashed)</p>
+            <h3 className="text-lg font-semibold text-gray-900">Revenue Forecast with 95% Confidence Interval</h3>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Historical actuals (solid brown) · STL+ARIMA forecast (dashed teal) · Shaded band = 95% CI
+            </p>
           </div>
           <div className="flex gap-2">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#6F4E37] text-white">
-              Actual
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[#6F4E37]/10 text-[#6F4E37]">
+              ─ Actual
             </span>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#1ABC9C] text-white">
-              Forecast
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[#1ABC9C]/10 text-[#1ABC9C]">
+              ╌ Forecast
             </span>
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={revenueForecastData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-            <XAxis dataKey="month" stroke="#6B7280" />
-            <YAxis stroke="#6B7280" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#ffffff",
-                border: "1px solid #E5E7EB",
-                borderRadius: "8px",
-              }}
-            />
+        <ResponsiveContainer width="100%" height={360}>
+          <ComposedChart data={chartData} margin={{ left: 10, right: 20 }}>
+            <defs>
+              <linearGradient id="ciGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#1ABC9C" stopOpacity={0.15} />
+                <stop offset="100%" stopColor="#1ABC9C" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+            <XAxis dataKey="month" stroke="#9CA3AF" tick={{ fontSize: 10 }} interval={0}
+              angle={-30} textAnchor="end" height={45} />
+            <YAxis stroke="#9CA3AF" tick={{ fontSize: 10 }}
+              tickFormatter={v => v >= 1_00_000 ? `${(v/1_00_000).toFixed(1)}L` : `${v}`} />
+            <Tooltip content={<ForecastTooltip />} />
             <Legend />
-            {/* Confidence Interval */}
-            <Area
-              type="monotone"
-              dataKey="upper"
-              stroke="none"
-              fill="#1ABC9C"
-              fillOpacity={0.2}
-            />
-            <Area
-              type="monotone"
-              dataKey="lower"
-              stroke="none"
-              fill="#1ABC9C"
-              fillOpacity={0.2}
-            />
-            {/* Actual Revenue */}
-            <Line
-              type="monotone"
-              dataKey="actual"
-              stroke="#6F4E37"
-              strokeWidth={3}
-              dot={{ fill: "#6F4E37", r: 5 }}
-              name="Actual Revenue"
-            />
-            {/* Forecast Revenue */}
-            <Line
-              type="monotone"
-              dataKey="forecast"
-              stroke="#1ABC9C"
-              strokeWidth={3}
-              strokeDasharray="5 5"
-              dot={{ fill: "#1ABC9C", r: 5 }}
-              name="Forecast Revenue"
-            />
-          </LineChart>
+            {/* 95% CI band */}
+            <Area type="monotone" dataKey="upper" fill="url(#ciGrad)" stroke="none"
+              name="CI Upper" legendType="none" />
+            <Area type="monotone" dataKey="lower" fill="#fff" stroke="none"
+              name="CI Lower" legendType="none" />
+            {/* Actual */}
+            <Line type="monotone" dataKey="actual" stroke="#6F4E37" strokeWidth={3}
+              dot={{ fill:"#6F4E37", r:5 }} name="Actual Revenue"
+              connectNulls={false} />
+            {/* Forecast */}
+            <Line type="monotone" dataKey="forecast" stroke="#1ABC9C" strokeWidth={2.5}
+              strokeDasharray="8 4" dot={{ fill:"#1ABC9C", r:4 }} name="Forecast"
+              connectNulls={false} />
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Item Demand & Seasonality */}
+      {/* ── Weekly + Monthly Seasonality side-by-side ─────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Item-Level Demand Forecast */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Item-Level Demand Forecast</h3>
-          <div className="space-y-4">
-            {itemDemandForecast.map((item, index) => (
-              <div key={index} className="border-b border-gray-100 pb-3 last:border-0">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-gray-900">{item.item}</span>
-                  <span className="text-sm font-semibold text-green-600">{item.change}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <div className="flex justify-between text-xs text-gray-600 mb-1">
-                      <span>Current: {item.current}</span>
-                      <span>Forecast: {item.forecast}</span>
-                    </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-[#6F4E37] to-[#1ABC9C]"
-                        style={{ width: `${(item.current / item.forecast) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
+
+        {/* Weekly seasonality index */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-start gap-2 mb-4">
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">Weekly Seasonality Index</h3>
+              <p className="text-xs text-gray-400 mt-0.5">100 = average weekday. Higher = busier day.</p>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={weekSeason} margin={{ left: 0, right: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
+              <XAxis dataKey="day" stroke="#9CA3AF" tick={{ fontSize: 11 }} />
+              <YAxis domain={[60, 140]} stroke="#9CA3AF" tick={{ fontSize: 10 }} />
+              <Tooltip formatter={(v: any) => [`${v}`, "Seasonality Index"]}
+                contentStyle={{ borderRadius:8 }} />
+              <ReferenceLine y={100} stroke="#D1D5DB" strokeDasharray="4 2" label={{ value:"Avg", fill:"#9CA3AF", fontSize:10 }} />
+              <Bar dataKey="index" radius={[6,6,0,0]} name="Seasonality Index">
+                {weekSeason.map((d: any, i: number) => (
+                  <Cell key={i} fill={d.index >= 110 ? "#1ABC9C" : d.index <= 90 ? "#EF4444" : "#6F4E37"} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="flex gap-4 mt-3 text-xs justify-center">
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#1ABC9C] rounded-sm" /> Peak (&gt;110)</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#6F4E37] rounded-sm" /> Average</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-red-400 rounded-sm" /> Low (&lt;90)</span>
+          </div>
+        </div>
+
+        {/* Monthly seasonality */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <h3 className="text-base font-semibold text-gray-900 mb-1">Monthly Seasonality</h3>
+          <p className="text-xs text-gray-400 mb-4">Seasonal demand index per month (100 = baseline)</p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {monthSeason.map((m: any, i: number) => (
+              <div key={i} className={`rounded-lg p-2.5 text-center border
+                ${m.is_peak ? "bg-emerald-50 border-emerald-200" :
+                  m.is_low  ? "bg-red-50 border-red-200" :
+                  "bg-gray-50 border-gray-100"}`}>
+                <p className="text-xs font-semibold text-gray-600">{m.month_short}</p>
+                <p className={`text-base font-bold mt-0.5
+                  ${m.is_peak ? "text-emerald-700" : m.is_low ? "text-red-500" : "text-gray-800"}`}>
+                  {m.index}
+                </p>
+                {m.is_peak && <span className="text-[9px] text-emerald-600 font-bold">PEAK</span>}
+                {m.is_low  && <span className="text-[9px] text-red-500 font-bold">LOW</span>}
               </div>
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Seasonality Heatmap */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Sales Pattern</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={seasonalityData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis dataKey="day" stroke="#6B7280" />
-              <YAxis stroke="#6B7280" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #E5E7EB",
-                  borderRadius: "8px",
-                }}
-              />
-              <Legend />
-              <Bar dataKey="morning" fill="#F59E0B" radius={[4, 4, 0, 0]} name="Morning" />
-              <Bar dataKey="afternoon" fill="#1ABC9C" radius={[4, 4, 0, 0]} name="Afternoon" />
-              <Bar dataKey="evening" fill="#6F4E37" radius={[4, 4, 0, 0]} name="Evening" />
-            </BarChart>
-          </ResponsiveContainer>
+      {/* ── Outlet-Level Forecasts ────────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Outlet-Level 30-Day Revenue Forecast</h3>
+        <p className="text-xs text-gray-400 mb-5">ARIMA(1,1,0) per outlet · shaded bar = 95% confidence band</p>
+        <div className="space-y-4">
+          {outletFC.map((o: any, i: number) => {
+            const maxRev = outletFC[0]?.next_30_rev || 1;
+            const growthPositive = o.growth >= 0;
+            return (
+              <div key={i} className="flex items-center gap-3">
+                <span className="w-36 text-xs font-medium text-gray-700 truncate flex-shrink-0">{o.outlet}</span>
+                <div className="flex-1 relative h-7">
+                  {/* Background (confidence upper bound) */}
+                  <div className="absolute inset-y-1 rounded-full bg-gray-100"
+                    style={{ width: `${(o.upper / maxRev) * 100}%` }} />
+                  {/* Forecast bar */}
+                  <div className="absolute inset-y-1 rounded-full transition-all duration-700"
+                    style={{
+                      width: `${(o.next_30_rev / maxRev) * 100}%`,
+                      background: COLORS[i % COLORS.length],
+                    }} />
+                  {/* Lower CI */}
+                  <div className="absolute inset-y-1.5 rounded-full opacity-20"
+                    style={{
+                      width: `${(o.lower / maxRev) * 100}%`,
+                      background: COLORS[i % COLORS.length],
+                    }} />
+                </div>
+                <span className="text-xs font-bold text-gray-800 w-20 text-right flex-shrink-0">
+                  {inr(o.next_30_rev)}
+                </span>
+                <span className={`text-[11px] font-bold w-14 text-right flex-shrink-0 flex items-center justify-end gap-0.5
+                  ${growthPositive ? "text-emerald-600" : "text-red-500"}`}>
+                  {growthPositive
+                    ? <ArrowUpRight className="w-3 h-3" />
+                    : <ArrowDownRight className="w-3 h-3" />}
+                  {o.growth >= 0 ? "+" : ""}{o.growth}%
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Forecast Insights */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Key Forecast Insights</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-lg p-4 border border-blue-100">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-xl">📈</span>
+      {/* ── Item Demand Forecast ─────────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Item-Level Demand Forecast</h3>
+        <p className="text-xs text-gray-400 mb-5">
+          Momentum-based projection: last 30 days vs prior 30 days, extrapolated forward
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {itemDemand.map((item: any, i: number) => (
+            <div key={i} className="border border-gray-100 rounded-xl p-4 hover:shadow-sm transition-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-gray-800 text-sm">{item.item}</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full
+                  ${item.is_growing ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-500"}`}>
+                  {item.change}
+                </span>
               </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Strong Q4 Growth Expected</h4>
-                <p className="text-sm text-gray-600">
-                  December shows 40% increase vs August. Prepare additional inventory for holiday season.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 border border-blue-100">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-xl">☕</span>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Cappuccino Demand Rising</h4>
-                <p className="text-sm text-gray-600">
-                  Forecast shows 9.7% increase in demand. Consider running promotional campaigns.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 border border-blue-100">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-xl">📅</span>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Weekend Peak Performance</h4>
-                <p className="text-sm text-gray-600">
-                  Saturdays show highest sales. Optimize staffing and inventory for weekend rush.
-                </p>
+              <div className="flex items-end gap-3">
+                <div className="flex-1">
+                  <p className="text-[10px] text-gray-400 mb-1">Current</p>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-gray-400 rounded-full"
+                      style={{ width: `${(item.current / Math.max(item.current, item.forecast)) * 100}%` }} />
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">{item.current.toLocaleString()} units</p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-[10px] text-gray-400 mb-1">Forecast</p>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full"
+                      style={{
+                        width: `${(item.forecast / Math.max(item.current, item.forecast)) * 100}%`,
+                        background: item.is_growing ? "#1ABC9C" : "#EF4444"
+                      }} />
+                  </div>
+                  <p className="text-xs font-semibold mt-1"
+                    style={{ color: item.is_growing ? "#1ABC9C" : "#EF4444" }}>
+                    {item.forecast.toLocaleString()} units
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
 
-          <div className="bg-white rounded-lg p-4 border border-blue-100">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-xl">⚡</span>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Morning Rush Opportunity</h4>
-                <p className="text-sm text-gray-600">
-                  Peak morning sales 8-10 AM. Consider breakfast combo offers to boost revenue.
-                </p>
-              </div>
+      {/* ── Model Info Badge ──────────────────────────────────────────────────── */}
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-5">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Info className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h4 className="font-semibold text-gray-900 mb-1">Forecasting Methodology</h4>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              <strong>STL (Seasonal-Trend Decomposition via LOESS)</strong> separates the 2-year
+              daily revenue series into trend, weekly seasonal, and residual components.
+              An <strong>ARIMA(1,1,1)</strong> model is then fitted on the trend component
+              to project future values while the last observed seasonal cycle is re-added.
+              Confidence intervals are computed from the 1.96σ residual standard deviation.
+              Outlet-level forecasts use independent <strong>ARIMA(1,1,0)</strong> models fitted
+              on each outlet's last 90 days.
+            </p>
+            <div className="flex flex-wrap gap-3 mt-3">
+              {[
+                ["Method", modelInfo.method],
+                ["Seasonal Period", `${modelInfo.seasonal_period} days`],
+                ["Horizon", `${modelInfo.horizon_days} days`],
+                ["Training Data", `${modelInfo.fitted_on_days} days`],
+                ["Residual Std", `₹${modelInfo.residual_std?.toLocaleString("en-IN") ?? "—"}`],
+              ].map(([k, v]) => (
+                <div key={k} className="bg-white border border-blue-100 rounded-lg px-3 py-1.5 text-xs">
+                  <span className="text-gray-400">{k}: </span>
+                  <span className="font-semibold text-gray-800">{v}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
