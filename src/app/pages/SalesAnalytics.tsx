@@ -1,13 +1,16 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   DollarSign, TrendingUp, ShoppingCart, Store,
-  ArrowUpRight, ArrowDownRight, RefreshCw
+  ArrowUpRight, ArrowDownRight, RefreshCw, UploadCloud
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell, Sector
 } from "recharts";
+import { useAuth } from "../context/AuthContext";
+
+const API = "http://localhost:8000";
 
 // ─── Colour palette ───────────────────────────────────────────────────────────
 const OUTLET_COLORS = [
@@ -44,21 +47,57 @@ const renderActiveShape = (props: any) => {
 };
 
 export function SalesAnalytics() {
+  const { authHeader, user } = useAuth();
   const [data, setData]     = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState("");
-  const [activeIdx, setActiveIdx] = useState(0); // for pie chart
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  // Sales upload state
+  const salesFileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState("");
 
   const load = useCallback(() => {
     setLoading(true);
     setError("");
-    fetch("/api/sales/analytics")
+    fetch(`${API}/api/sales/analytics`, { headers: authHeader() })
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(e => { setError(e.message); setLoading(false); });
-  }, []);
+  }, [user?.shop]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleUploadSales = async (file: File) => {
+    setUploading(true);
+    setUploadMsg("");
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch(`${API}/api/upload/sales`, {
+        method: "POST",
+        headers: authHeader(),
+        body: formData,
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setUploadMsg(`✅ Uploaded ${json.processed_records} sales records for ${user?.shop}!`);
+        // Invalidate engine cache then reload
+        await fetch(`${API}/api/sales/refresh`, {
+          method: "POST",
+          headers: authHeader(),
+        });
+        load();
+      } else {
+        setUploadMsg(`❌ ${json.detail || "Upload failed"}`);
+      }
+    } catch {
+      setUploadMsg("❌ Upload failed — check the backend is running.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // ── Loading / Error states ───────────────────────────────────────────────
   if (loading) return (
@@ -66,7 +105,7 @@ export function SalesAnalytics() {
       <div className="text-center">
         <div className="w-16 h-16 border-4 border-[#6F4E37] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
         <p className="text-gray-600 font-medium">Loading Sales Analytics…</p>
-        <p className="text-gray-400 text-sm mt-1">Running analytics engine on 2-year dataset</p>
+        <p className="text-gray-400 text-sm mt-1">Running analytics engine on {user?.shop} dataset</p>
       </div>
     </div>
   );
@@ -98,14 +137,44 @@ export function SalesAnalytics() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-1">Sales Analytics</h1>
           <p className="text-gray-500 text-sm">
-            Model-driven insights across {kpis.active_outlets} outlets · 2-year dataset
+            {user?.shop} · Model-driven insights · 2-year dataset
           </p>
         </div>
-        <button onClick={load}
-          className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-600">
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Sales Upload */}
+          <input
+            ref={salesFileRef}
+            type="file"
+            accept=".csv,.xlsx"
+            className="hidden"
+            onChange={(e) => { if (e.target.files?.[0]) handleUploadSales(e.target.files[0]); }}
+          />
+          <button
+            id="btn-upload-sales"
+            onClick={() => salesFileRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-2 px-4 py-2 bg-[#6F4E37] text-white rounded-lg hover:bg-[#5d4230] transition-colors text-sm font-medium disabled:opacity-60"
+          >
+            <UploadCloud className="w-4 h-4" />
+            {uploading ? "Uploading…" : "Upload Sales Data (CSV)"}
+          </button>
+          <button onClick={load}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-600">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        </div>
       </div>
+
+      {/* Upload feedback */}
+      {uploadMsg && (
+        <div className={`mb-4 p-3 rounded-lg text-sm ${
+          uploadMsg.startsWith("✅")
+            ? "bg-green-50 text-green-700 border border-green-200"
+            : "bg-red-50 text-red-700 border border-red-200"
+        }`}>
+          {uploadMsg}
+        </div>
+      )}
 
       {/* ── KPI Cards ───────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
@@ -168,7 +237,7 @@ export function SalesAnalytics() {
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Revenue & Transaction Trend</h3>
-          <p className="text-xs text-gray-400 mt-0.5">Monthly aggregation across all 9 outlets</p>
+          <p className="text-xs text-gray-400 mt-0.5">Monthly aggregation · {user?.shop}</p>
         </div>
         <ResponsiveContainer width="100%" height={320}>
           <LineChart data={monthly} margin={{ left: 10, right: 30 }}>

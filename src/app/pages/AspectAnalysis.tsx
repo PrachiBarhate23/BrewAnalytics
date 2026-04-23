@@ -10,8 +10,12 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { useAuth } from "../context/AuthContext";
+
+const API = "http://localhost:8000";
 
 export function AspectAnalysis() {
+  const { authHeader, user } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,7 +24,8 @@ export function AspectAnalysis() {
   const [fetchingReviews, setFetchingReviews] = useState(false);
 
   useEffect(() => {
-    fetch("/api/sentiment/aspects")
+    setLoading(true);
+    fetch(`${API}/api/sentiment/aspects`, { headers: authHeader() })
       .then((res) => res.json())
       .then((json) => {
         setData(json);
@@ -30,12 +35,15 @@ export function AspectAnalysis() {
         console.error("Error fetching aspect data:", err);
         setLoading(false);
       });
-  }, []);
+  }, [user?.shop]);
 
   useEffect(() => {
     if (selectedPhrase) {
       setFetchingReviews(true);
-      fetch(`/api/sentiment/reviews?query=${encodeURIComponent(selectedPhrase)}`)
+      fetch(
+        `${API}/api/sentiment/reviews?query=${encodeURIComponent(selectedPhrase)}`,
+        { headers: authHeader() }
+      )
         .then((res) => res.json())
         .then((json) => {
           setPhraseReviews(json);
@@ -51,7 +59,14 @@ export function AspectAnalysis() {
   }, [selectedPhrase]);
 
   if (loading) {
-    return <div className="p-8">Loading aspect data...</div>;
+    return (
+      <div className="p-8 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#6F4E37] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 font-medium">Loading aspect data…</p>
+        </div>
+      </div>
+    );
   }
 
   const aspectData = data?.aspectData || [];
@@ -59,7 +74,6 @@ export function AspectAnalysis() {
   const overallSatisfaction = data?.overallSatisfaction || 0;
   const totalAspects = data?.totalAspects || 0;
 
-  // Let's find the most praised and most complained aspects from our data
   let mostPraised = { aspect: "N/A", count: 0 };
   let mostComplained = { aspect: "N/A", count: 0 };
 
@@ -77,8 +91,20 @@ export function AspectAnalysis() {
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Aspect-Based Analysis</h1>
-        <p className="text-gray-600">Deep dive into specific aspects of customer feedback</p>
+        <p className="text-gray-600">
+          {user?.shop} — Deep dive into specific aspects of customer feedback
+        </p>
       </div>
+
+      {/* No data state */}
+      {data?.error && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+          <strong>No data yet:</strong> {data.error}<br />
+          <span className="text-sm">
+            Upload a review CSV from the Sentiment Analysis page first.
+          </span>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -137,8 +163,8 @@ export function AspectAnalysis() {
           </div>
           <div className="space-y-3">
             {topPhrases.positive.map((phrase: any, index: number) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 onClick={() => setSelectedPhrase(selectedPhrase === phrase.phrase ? null : phrase.phrase)}
                 className={`flex items-center justify-between bg-white rounded-lg p-3 border cursor-pointer transition-all hover:shadow-md ${
                   selectedPhrase === phrase.phrase ? "border-green-500 ring-2 ring-green-200" : "border-green-100"
@@ -151,6 +177,11 @@ export function AspectAnalysis() {
                 <span className="text-sm font-semibold text-gray-600">{phrase.count} mentions</span>
               </div>
             ))}
+            {topPhrases.positive.length === 0 && (
+              <p className="text-sm text-gray-500 italic text-center py-4">
+                No positive phrases detected yet.
+              </p>
+            )}
           </div>
         </div>
 
@@ -162,8 +193,8 @@ export function AspectAnalysis() {
           </div>
           <div className="space-y-3">
             {topPhrases.negative.map((phrase: any, index: number) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 onClick={() => setSelectedPhrase(selectedPhrase === phrase.phrase ? null : phrase.phrase)}
                 className={`flex items-center justify-between bg-white rounded-lg p-3 border cursor-pointer transition-all hover:shadow-md ${
                   selectedPhrase === phrase.phrase ? "border-red-500 ring-2 ring-red-200" : "border-red-100"
@@ -176,6 +207,11 @@ export function AspectAnalysis() {
                 <span className="text-sm font-semibold text-gray-600">{phrase.count} mentions</span>
               </div>
             ))}
+            {topPhrases.negative.length === 0 && (
+              <p className="text-sm text-gray-500 italic text-center py-4">
+                No negative phrases detected yet.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -190,7 +226,7 @@ export function AspectAnalysis() {
                 Reviews for "{selectedPhrase}"
               </h3>
             </div>
-            <button 
+            <button
               onClick={() => setSelectedPhrase(null)}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >

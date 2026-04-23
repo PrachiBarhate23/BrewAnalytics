@@ -18,14 +18,33 @@ def get_predictor():
         try:
             _predictor = SentimentPredictor(MODEL_DIR)
         except Exception as e:
-            print(f"Failed to load predictor: {e}")
+            print(f"Failed to load BERT predictor. Exception: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
     return _predictor
 
 ASPECT_KEYWORDS = {
-    "Food": ["taste", "tasty", "bland", "flavor", "fresh", "stale", "uncooked", "delicious", "yummy", "food", "cold food", "oily", "pastry", "coffee", "latte", "croissant"],
-    "Service": ["slow", "fast", "quick", "wait", "service", "staff", "rude", "friendly", "rush", "barista"],
-    "Pricing": ["expensive", "overpriced", "costly", "price", "pricing", "affordable", "cheap", "value", "worth", "pricy"],
-    "Ambience": ["ambience", "atmosphere", "cozy", "noisy", "music", "crowded", "vibe", "seating", "environment", "clean", "dirty", "hygiene"]
+    "Food": [
+        "taste", "tasty", "bland", "flavor", "fresh", "stale", "uncooked", "delicious", "yummy", "food", 
+        "cold food", "oily", "pastry", "coffee", "latte", "croissant", "burger", "pizza", "water", 
+        "fries", "sandwich", "meal", "snack", "portion", "quantity", "quality", "hot", "cold", "sweet", 
+        "salty", "spicy", "menu", "drink", "beverage", "tea", "cake", "bread", "chicken", "veg", "vegan"
+    ],
+    "Service": [
+        "slow", "fast", "quick", "wait", "service", "staff", "rude", "friendly", "rush", "barista", 
+        "manager", "waiter", "waitress", "server", "polite", "helpful", "attentive", "ignored", 
+        "delivery", "order", "wrong", "mistake", "delay", "late", "greet", "professional"
+    ],
+    "Pricing": [
+        "expensive", "overpriced", "costly", "price", "pricing", "affordable", "cheap", "value", 
+        "worth", "pricy", "money", "bill", "cost", "charge", "rip off", "deal", "discount", "offer"
+    ],
+    "Ambience": [
+        "ambience", "atmosphere", "cozy", "noisy", "music", "crowded", "vibe", "seating", "environment", 
+        "clean", "dirty", "hygiene", "smell", "stinks", "restroom", "washroom", "table", "chair", 
+        "lighting", "dark", "bright", "aesthetic", "vibrant", "chill", "relax", "loud", "quiet", "space"
+    ]
 }
 
 def extract_aspects(text: str):

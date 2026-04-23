@@ -9,6 +9,9 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine
 } from "recharts";
+import { useAuth } from "../context/AuthContext";
+
+const API = "http://localhost:8000";
 
 // ─── INR formatter ────────────────────────────────────────────────────────────
 const inr = (n: number) =>
@@ -44,6 +47,7 @@ const ForecastTooltip = ({ active, payload, label }: any) => {
 };
 
 export function SalesForecasting() {
+  const { authHeader, user } = useAuth();
   const [data, setData]         = useState<any>(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState("");
@@ -53,13 +57,13 @@ export function SalesForecasting() {
   const load = useCallback((h: number) => {
     setFetching(true);
     setError("");
-    fetch(`/api/sales/forecast?horizon=${h}`)
+    fetch(`${API}/api/sales/forecast?horizon=${h}`, { headers: authHeader() })
       .then(r => r.json())
       .then(d => { setData(d); setFetching(false); setLoading(false); })
       .catch(e => { setError(e.message); setFetching(false); setLoading(false); });
-  }, []);
+  }, [user?.shop]);
 
-  useEffect(() => { load(horizon); }, []);
+  useEffect(() => { load(horizon); }, [load]);
 
   const changeHorizon = (h: number) => { setHorizon(h); load(h); };
 
@@ -69,7 +73,7 @@ export function SalesForecasting() {
       <div className="text-center">
         <div className="w-16 h-16 border-4 border-[#1ABC9C] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
         <p className="text-gray-600 font-medium">Running Forecast Model…</p>
-        <p className="text-gray-400 text-sm mt-1">STL Decomposition + ARIMA(1,1,1)</p>
+        <p className="text-gray-400 text-sm mt-1">STL Decomposition + ARIMA(1,1,1) · {user?.shop}</p>
       </div>
     </div>
   );
@@ -108,7 +112,7 @@ export function SalesForecasting() {
           <h1 className="text-3xl font-bold text-gray-900 mb-1">Sales Forecasting</h1>
           <p className="text-gray-500 text-sm flex items-center gap-1.5">
             <Cpu className="w-3.5 h-3.5" />
-            {modelInfo.method || "STL + ARIMA"} · Trained on {modelInfo.fitted_on_days} days
+            {user?.shop} · {modelInfo.method || "STL + ARIMA"} · Trained on {modelInfo.fitted_on_days} days
           </p>
         </div>
 
@@ -188,7 +192,7 @@ export function SalesForecasting() {
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Revenue Forecast with 95% Confidence Interval</h3>
             <p className="text-xs text-gray-400 mt-0.5">
-              Historical actuals (solid brown) · STL+ARIMA forecast (dashed teal) · Shaded band = 95% CI
+              Historical actuals (solid brown) · STL+ARIMA forecast (dashed teal) · Shaded band = 95% CI · {user?.shop}
             </p>
           </div>
           <div className="flex gap-2">
@@ -336,7 +340,7 @@ export function SalesForecasting() {
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-1">Item-Level Demand Forecast</h3>
         <p className="text-xs text-gray-400 mb-5">
-          Momentum-based projection: last 30 days vs prior 30 days, extrapolated forward
+          Momentum-based projection: last 30 days vs prior 30 days, extrapolated forward · {user?.shop}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {itemDemand.map((item: any, i: number) => (

@@ -8,3 +8,5 @@ torch
 python-multipart
 openpyxl
 pydantic
+python-jose[cryptography]
+passlib[bcrypt]

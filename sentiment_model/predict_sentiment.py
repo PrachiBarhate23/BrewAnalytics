@@ -37,9 +37,13 @@ class SentimentPredictor:
         print(f"  Model loaded on: {self.device}")
 
     def predict(self, text: str) -> dict:
-        """Predict sentiment for a single review text."""
+        # Ensure text is string and handle NaN values
+        clean_text = str(text) if pd.notna(text) else ""
+        if not clean_text.strip():
+            clean_text = "Neutral"
+
         encoding = self.tokenizer.encode_plus(
-            str(text),
+            clean_text,
             add_special_tokens=True,
             max_length=MAX_LENGTH,
             padding="max_length",

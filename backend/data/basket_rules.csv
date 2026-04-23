@@ -1,0 +1,6 @@
+antecedent,consequent,support,confidence,lift
+Cappuccino,Croissant,0.35,0.68,1.8
+Latte,Muffin,0.28,0.62,1.6
+Espresso,Biscotti,0.22,0.58,1.5
+Croissant,Orange Juice,0.31,0.55,1.4
+Bagel,Cream Cheese,0.25,0.85,2.1

@@ -1,0 +1,79 @@
+[
+  {
+    "email": "vrindavan@brew.com",
+    "shop": "Vrindavan",
+    "role": "manager",
+    "hashed_password": "$pbkdf2-sha256$29000$yRkjRKjVWotxzplzrvV.Lw$JFxX90b7qELHy5cEdyiGAC7052b12bvDG37kxBbunTk",
+    "created_at": "2026-04-23T13:24:42.381411"
+  },
+  {
+    "email": "cluckins@brew.com",
+    "shop": "Cluckins",
+    "role": "manager",
+    "hashed_password": "$pbkdf2-sha256$29000$krK2di4lxDinNIbw3vvf2w$Di71/GBMzUzMcdtZ070T4i.7a73RkPhnimlmRR.Vgeo",
+    "created_at": "2026-04-23T13:24:42.394886"
+  },
+  {
+    "email": "amarfrankie@brew.com",
+    "shop": "Amar Frankie",
+    "role": "manager",
+    "hashed_password": "$pbkdf2-sha256$29000$AWDMudfam7P2XkvJea8V4g$bl5KopetJP54mNlZdYjmicLO9Fcgi1D4AXrvaaLFBb0",
+    "created_at": "2026-04-23T13:24:42.407090"
+  },
+  {
+    "email": "manchurian@brew.com",
+    "shop": "Manchurian Shop",
+    "role": "manager",
+    "hashed_password": "$pbkdf2-sha256$29000$MoaQMgZgrJWS0rp3jhECwA$tpyM1RUFVWK8bxXUIT6bWXB2RtPc0dP.PBf97e.cBmg",
+    "created_at": "2026-04-23T13:24:42.423744"
+  },
+  {
+    "email": "shawarma@brew.com",
+    "shop": "Shawarma Shop",
+    "role": "manager",
+    "hashed_password": "$pbkdf2-sha256$29000$bu39/z9nrLVWag1hzNmbMw$Na.NKiujsG7mnMRZYNyPKJzJtiUEnIcs/HWSvCCEVeI",
+    "created_at": "2026-04-23T13:24:42.446883"
+  },
+  {
+    "email": "juicecenter@brew.com",
+    "shop": "Juice Center",
+    "role": "manager",
+    "hashed_password": "$pbkdf2-sha256$29000$eg9hzLmXEgLA.P./N.Yc4w$L0j5NeydaZi6IcH7b8NV4qe7lta70uKDjt6lVVnVksQ",
+    "created_at": "2026-04-23T13:24:42.466885"
+  },
+  {
+    "email": "spjimr@brew.com",
+    "shop": "SPJIMR Mess",
+    "role": "manager",
+    "hashed_password": "$pbkdf2-sha256$29000$RYgR4jwHYEzJ.R/DeI9xrg$F9b5qI4iClSgTvHxyl9/vtCxFqNCJ4jLpIaJnT5rBKA",
+    "created_at": "2026-04-23T13:24:42.492625"
+  },
+  {
+    "email": "canteengf@brew.com",
+    "shop": "College Canteen Ground Floor",
+    "role": "manager",
+    "hashed_password": "$pbkdf2-sha256$29000$GkNoLcXYG6NUCuE8B6D03g$sYRTMAblOcNnwpM/Tsd6pbMuJygakamHsIPAJR4zKfc",
+    "created_at": "2026-04-23T13:24:42.514130"
+  },
+  {
+    "email": "canteen3f@brew.com",
+    "shop": "College Canteen 3rd Floor",
+    "role": "manager",
+    "hashed_password": "$pbkdf2-sha256$29000$P6c0ZszZu5fS2rsXIuSckw$4o5ezpuPU.q0.KU/SafUYKXkl3Trduoi5z5m39CC0FU",
+    "created_at": "2026-04-23T13:24:42.532753"
+  },
+  {
+    "email": "admin@brew.com",
+    "shop": "All",
+    "role": "admin",
+    "hashed_password": "$pbkdf2-sha256$29000$fo9R6n0PIYTwPuc853wPIQ$dxscbyrMR9TZ4uMnwKV8L4nuOtnir4oF2ZcHvdoK4dw",
+    "created_at": "2026-04-23T13:24:42.553296"
+  },
+  {
+    "email": "vrindavan@gmail.com",
+    "shop": "Vrindavan",
+    "role": "manager",
+    "hashed_password": "$pbkdf2-sha256$29000$wjhnzJnz/t97z3nPeQ.htA$bv67As2mMx4enXhLzjyetIdPTGRpRP4DSlMKClQWGEE",
+    "created_at": "2026-04-23T13:24:42.597603"
+  }
+]

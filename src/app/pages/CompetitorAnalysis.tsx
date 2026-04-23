@@ -17,79 +17,55 @@ import {
   Cell,
 } from "recharts";
 
-const ratingComparisonData = [
-  { name: "Your Cafe", rating: 4.6, color: "#6F4E37" },
-  { name: "Coffee Corner", rating: 4.2, color: "#94A3B8" },
-  { name: "Brew & Bean", rating: 4.4, color: "#94A3B8" },
-  { name: "Java Junction", rating: 4.1, color: "#94A3B8" },
-  { name: "Cafe Mocha", rating: 4.3, color: "#94A3B8" },
-];
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 
-const sentimentRadarData = [
-  { category: "Food Quality", yourCafe: 85, avgCompetitor: 72 },
-  { category: "Service", yourCafe: 78, avgCompetitor: 75 },
-  { category: "Ambiance", yourCafe: 82, avgCompetitor: 68 },
-  { category: "Price", yourCafe: 65, avgCompetitor: 70 },
-  { category: "Cleanliness", yourCafe: 88, avgCompetitor: 74 },
-  { category: "Speed", yourCafe: 72, avgCompetitor: 76 },
-];
-
-const pricePositioningData = [
-  { name: "Your Cafe", price: 4.2, quality: 4.6, size: 800 },
-  { name: "Coffee Corner", price: 3.8, quality: 4.2, size: 600 },
-  { name: "Brew & Bean", price: 4.5, quality: 4.4, size: 700 },
-  { name: "Java Junction", price: 3.5, quality: 4.1, size: 500 },
-  { name: "Cafe Mocha", price: 4.0, quality: 4.3, size: 650 },
-];
-
-const competitorMetrics = [
-  {
-    name: "Coffee Corner",
-    rating: 4.2,
-    sentiment: 68,
-    avgPrice: "$3.80",
-    marketShare: 18,
-    trend: "stable",
-  },
-  {
-    name: "Brew & Bean",
-    rating: 4.4,
-    sentiment: 72,
-    avgPrice: "$4.50",
-    marketShare: 22,
-    trend: "up",
-  },
-  {
-    name: "Java Junction",
-    rating: 4.1,
-    sentiment: 65,
-    avgPrice: "$3.50",
-    marketShare: 15,
-    trend: "down",
-  },
-  {
-    name: "Cafe Mocha",
-    rating: 4.3,
-    sentiment: 70,
-    avgPrice: "$4.00",
-    marketShare: 20,
-    trend: "up",
-  },
-];
-
-const strengthsWeaknesses = {
-  strengths: [
-    { label: "Food Quality", score: 85, advantage: "+13 vs avg" },
-    { label: "Cleanliness", score: 88, advantage: "+14 vs avg" },
-    { label: "Ambiance", score: 82, advantage: "+14 vs avg" },
-  ],
-  weaknesses: [
-    { label: "Pricing", score: 65, disadvantage: "-5 vs avg" },
-    { label: "Service Speed", score: 72, disadvantage: "-4 vs avg" },
-  ],
-};
+// Data is now fetched dynamically from the API
 
 export function CompetitorAnalysis() {
+  const { authHeader, user } = useAuth();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fallback to a placeholder if user context isn't ready
+  const activeShop = user?.shop || "Vrindavan Restaurant";
+
+  useEffect(() => {
+    fetch("/api/sales/competitors", { headers: authHeader() })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load competitor data");
+        return res.json();
+      })
+      .then((json) => {
+        setData(json);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch competitor data:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return <div className="p-8 text-gray-600">Loading competitor analysis...</div>;
+  }
+
+  if (!data || data.detail) {
+    return <div className="p-8 text-red-600">Error loading competitor data: {data?.detail || 'Unknown error'}</div>;
+  }
+
+  const {
+    ratingComparisonData,
+    sentimentRadarData,
+    pricePositioningData,
+    competitorMetrics,
+    strengthsWeaknesses
+  } = data;
+
+  // Calculate dynamic header values from current user position
+  const userMetric = competitorMetrics.find((m: any) => m.color === "#6F4E37") || competitorMetrics[0];
+  const userRank = competitorMetrics.findIndex((m: any) => m.name === userMetric?.name) + 1;
+
   return (
     <div className="p-8">
       {/* Page Header */}
@@ -102,23 +78,23 @@ export function CompetitorAnalysis() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-gradient-to-br from-[#6F4E37] to-[#5d4230] rounded-xl p-6 text-white shadow-lg">
           <p className="text-sm opacity-90 mb-1">Your Market Position</p>
-          <p className="text-3xl font-bold mb-1">#2</p>
-          <p className="text-sm opacity-80">Out of 5 competitors</p>
+          <p className="text-3xl font-bold mb-1">#{userRank}</p>
+          <p className="text-sm opacity-80">Out of {competitorMetrics.length} competitors</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <p className="text-sm text-gray-600 mb-1">Rating vs Avg</p>
-          <p className="text-3xl font-bold text-gray-900 mb-1">4.6</p>
-          <p className="text-xs text-green-600">+0.4 above average</p>
+          <p className="text-3xl font-bold text-gray-900 mb-1">{userMetric?.rating?.toFixed(1) || "4.6"}</p>
+          <p className="text-xs text-green-600">Based on demand</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <p className="text-sm text-gray-600 mb-1">Market Share</p>
-          <p className="text-3xl font-bold text-gray-900 mb-1">25%</p>
-          <p className="text-xs text-green-600">+3% this quarter</p>
+          <p className="text-3xl font-bold text-gray-900 mb-1">{userMetric?.marketShare || "25"}%</p>
+          <p className="text-xs text-green-600">Trending {userMetric?.trend || "up"}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <p className="text-sm text-gray-600 mb-1">Price Index</p>
-          <p className="text-3xl font-bold text-gray-900 mb-1">108</p>
-          <p className="text-xs text-gray-600">8% above avg</p>
+          <p className="text-sm text-gray-600 mb-1">Avg Price</p>
+          <p className="text-3xl font-bold text-gray-900 mb-1">{userMetric?.avgPrice || "$4.20"}</p>
+          <p className="text-xs text-gray-600">Premium pricing</p>
         </div>
       </div>
 

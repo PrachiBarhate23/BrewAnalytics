@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { Filter, Download, Send, Activity } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Filter, Download, Send, Activity, UploadCloud } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import {
   AreaChart,
   Area,
@@ -13,6 +14,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+const API = "http://localhost:8000";
+
 const COLOR_PALETTE = [
   "text-blue-600",
   "text-emerald-600",
@@ -24,10 +27,15 @@ const COLOR_PALETTE = [
 ];
 
 export function SentimentAnalysis() {
+  const { authHeader, user } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
   const [filterWord, setFilterWord] = useState<string | null>(null);
+
+  // Upload state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState("");
 
   // Live prediction state
   const [liveReview, setLiveReview] = useState("");
@@ -41,9 +49,9 @@ export function SentimentAnalysis() {
     setPredictError("");
     setPredictionResult(null);
     try {
-      const res = await fetch("/api/sentiment/predict", {
+      const res = await fetch(`${API}/api/sentiment/predict`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeader() },
         body: JSON.stringify({ text: liveReview }),
       });
       const json = await res.json();
@@ -56,29 +64,53 @@ export function SentimentAnalysis() {
     }
   };
 
+  const handleUploadReviews = async (file: File) => {
+    setUploading(true);
+    setUploadMsg("");
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch(`${API}/api/upload/reviews`, {
+        method: "POST",
+        headers: authHeader(),
+        body: formData,
+      });
+      const json = await res.json();
+      setUploadMsg(res.ok ? `Uploaded ${json.processed_records} reviews!` : json.detail || "Upload failed");
+      if (res.ok) {
+        // Refresh data
+        setLoading(true);
+        fetch(`${API}/api/sentiment/summary`, { headers: authHeader() })
+          .then(r => r.json())
+          .then(d => { setData((prev: any) => ({ ...prev, ...d })); setLoading(false); })
+          .catch(() => setLoading(false));
+      }
+    } catch {
+      setUploadMsg("Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   useEffect(() => {
-    // We keep loading true during filter changes to show fresh state
     setLoading(true);
-    const summaryUrl = filterWord 
-      ? `/api/sentiment/summary?word=${encodeURIComponent(filterWord)}` 
-      : "/api/sentiment/summary";
+    const summaryUrl = filterWord
+      ? `${API}/api/sentiment/summary?word=${encodeURIComponent(filterWord)}`
+      : `${API}/api/sentiment/summary`;
 
     Promise.all([
-      fetch(summaryUrl).then((res) => res.json()),
-      fetch("/api/sentiment/aspects").then((res) => res.json())
+      fetch(summaryUrl, { headers: authHeader() }).then((res) => res.json()),
+      fetch(`${API}/api/sentiment/aspects`, { headers: authHeader() }).then((res) => res.json()),
     ])
       .then(([summaryJson, aspectsJson]) => {
-        setData({
-          ...summaryJson,
-          aspectData: aspectsJson.aspectData
-        });
+        setData({ ...summaryJson, aspectData: aspectsJson.aspectData });
         setLoading(false);
       })
       .catch((err) => {
         console.error("Error fetching sentiment data:", err);
         setLoading(false);
       });
-  }, [filterWord]);
+  }, [filterWord, user?.shop]);
 
   if (loading) {
     return <div className="p-8">Loading...</div>;
@@ -97,9 +129,26 @@ export function SentimentAnalysis() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Sentiment Analysis</h1>
-          <p className="text-gray-600">Analyze customer feedback and sentiment trends</p>
+          <p className="text-gray-600">{user?.shop} — Customer feedback & sentiment trends</p>
         </div>
         <div className="flex gap-3">
+          {/* Review Upload Button */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,.xlsx"
+            className="hidden"
+            onChange={(e) => { if (e.target.files?.[0]) handleUploadReviews(e.target.files[0]); }}
+          />
+          <button
+            id="btn-upload-reviews"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-2 px-4 py-2 bg-[#1ABC9C] text-white rounded-lg hover:bg-[#16a085] transition-colors text-sm font-medium disabled:opacity-60"
+          >
+            <UploadCloud className="w-4 h-4" />
+            {uploading ? "Uploading…" : "Upload Review Data (CSV)"}
+          </button>
           <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
             <Filter className="w-4 h-4" />
             Filter
@@ -110,6 +159,18 @@ export function SentimentAnalysis() {
           </button>
         </div>
       </div>
+      {uploadMsg && (
+        <div className={`mb-4 p-3 rounded-lg text-sm ${uploadMsg.includes("!") ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+          {uploadMsg}
+        </div>
+      )}
+      {loading && <div className="p-8 text-center text-gray-500">Loading your review data…</div>}
+      {!loading && data?.error && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+          <strong>No data yet:</strong> {data.error}<br />
+          <span className="text-sm">Upload a review CSV using the button above to get started. You can use the test file at <code>sentiment_model/shops/{user?.shop?.replace(/ /g,'_').toLowerCase()}/test_reviews_*.csv</code></span>
+        </div>
+      )}
 
       {/* Sentiment Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
