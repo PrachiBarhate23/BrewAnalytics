@@ -228,18 +228,26 @@ def get_aspect_analysis(shop: str = Depends(get_current_shop)):
         for aspect, counts in aspect_counts.items()
     ]
 
-    # Top phrases
+    # Top phrases — match keywords that actually appear in real reviews
     top_pos_phrases = []
     top_neg_phrases = []
+    POS_KW = ["like", "love", "great", "good", "excellent", "amazing", "best", "nice",
+              "tasty", "delicious", "fresh", "clean", "recommend", "pocket", "value",
+              "hygienic", "perfect", "outstanding", "comfort", "goated", "fast",
+              "friendly", "quick", "well", "consistent", "flavour", "flavourful"]
+    NEG_KW = ["overpriced", "expensive", "hygiene", "unhygienic", "dirty", "not clean",
+              "slow", "rude", "bad", "sick", "flies", "not good", "not impressed",
+              "not available", "not fresh", "bland", "stale", "never", "na",
+              "cold food", "wrong", "delay", "average", "okayish", "limited"]
     for _, row in df.iterrows():
         review = str(row.get("Review", "")).lower()
         sent = row.get("predicted_sentiment", "")
         if sent == "Positive":
-            for kw in ["taste", "delicious", "friendly", "fast", "cozy", "clean"]:
+            for kw in POS_KW:
                 if kw in review:
                     top_pos_phrases.append(f"good {kw}")
         elif sent == "Negative":
-            for kw in ["slow", "expensive", "rude", "dirty", "cold", "bland", "unhygienic"]:
+            for kw in NEG_KW:
                 if kw in review:
                     top_neg_phrases.append(f"{kw} issue")
 

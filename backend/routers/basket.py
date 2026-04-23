@@ -1,132 +1,138 @@
-from fastapi import APIRouter
-import pandas as pd
+"""
+BrewAnalytics – Market Basket Analysis Router
+=============================================
+All endpoints are shop-isolated via JWT. Each shop sees only its own basket data.
+"""
+import sys
 import os
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-BACKEND_DIR = os.path.dirname(CURRENT_DIR)
-DATA_DIR = os.path.join(BACKEND_DIR, "data")
-if not os.path.exists(DATA_DIR):
-    os.makedirs(DATA_DIR)
+# Make sure project root is importable
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-RULES_CSV = os.path.join(DATA_DIR, "basket_rules.csv")
+from fastapi import APIRouter, Depends
+from sales_model.basket_model import BasketAnalysisEngine
+from routers.auth_utils import get_current_shop
 
-router = APIRouter()
+router      = APIRouter()
 router_recs = APIRouter()
 
-DEFAULT_RULES = [
-  {"antecedent": "Cappuccino", "consequent": "Croissant", "support": 0.35, "confidence": 0.68, "lift": 1.8},
-  {"antecedent": "Latte", "consequent": "Muffin", "support": 0.28, "confidence": 0.62, "lift": 1.6},
-  {"antecedent": "Espresso", "consequent": "Biscotti", "support": 0.22, "confidence": 0.58, "lift": 1.5},
-  {"antecedent": "Croissant", "consequent": "Orange Juice", "support": 0.31, "confidence": 0.55, "lift": 1.4},
-  {"antecedent": "Bagel", "consequent": "Cream Cheese", "support": 0.25, "confidence": 0.85, "lift": 2.1},
-]
 
-def load_or_create_rules():
-    if not os.path.exists(RULES_CSV):
-        df = pd.DataFrame(DEFAULT_RULES)
-        df.to_csv(RULES_CSV, index=False)
-        return DEFAULT_RULES
-    else:
-        df = pd.read_csv(RULES_CSV)
-        return df.to_dict('records')
+# ── Primary endpoint ──────────────────────────────────────────────────────────
+@router.get("/analysis")
+def get_basket_analysis(shop: str = Depends(get_current_shop)):
+    """Full MBA analysis for the authenticated shop."""
+    return BasketAnalysisEngine(outlet=shop).get_analysis()
 
+
+# ── Legacy compat: /api/basket/rules ─────────────────────────────────────────
 @router.get("/rules")
-def get_basket_rules():
-    rules = load_or_create_rules()
+def get_basket_rules(shop: str = Depends(get_current_shop)):
+    """Backward-compatible endpoint — returns rules in 0-1 decimal format."""
+    result = BasketAnalysisEngine(outlet=shop).get_analysis()
+    if "error" in result:
+        return {"rules": []}
+    rules = [
+        {
+            "antecedent": r["antecedent"],
+            "consequent": r["consequent"],
+            "support":    r["support"]    / 100,
+            "confidence": r["confidence"] / 100,
+            "lift":       r["lift"],
+        }
+        for r in result.get("rules", [])
+    ]
     return {"rules": rules}
 
+
+# ── Recommendations ───────────────────────────────────────────────────────────
 @router_recs.get("/")
-def get_recommendations():
-    recommendations = [
-      {
-        "id": 1,
-        "category": "Revenue Optimization",
-        "severity": "high",
-        "icon": "AlertTriangle",
-        "iconBg": "bg-red-100",
-        "iconColor": "text-red-600",
-        "title": "Weekday Evening Revenue Drop Alert",
-        "description": "Sales data shows a 12% decline in weekday evening revenue (5-8 PM) compared to last month. Customer traffic decreased by 18% during this period.",
-        "recommendation": "Implement a 'Happy Hour' promotion offering 10% discount on beverages during 5-7 PM weekdays. Expected revenue increase: +$2,400/month.",
-        "impact": "High",
-        "effort": "Low",
-        "roi": "+$2.4K/month",
-        "actions": ["Create promotion campaign", "Update menu boards", "Train staff on new offers"]
-      },
-      {
-        "id": 2,
-        "category": "Inventory Management",
-        "severity": "high",
-        "icon": "Package",
-        "iconBg": "bg-orange-100",
-        "iconColor": "text-orange-600",
-        "title": "Croissant Inventory Running Low",
-        "description": "Current inventory levels are critically low. Based on demand forecast, stockout risk is 85% within 48 hours. High demand expected this weekend.",
-        "recommendation": "Immediate restock of 200 units recommended. Consider increasing safety stock levels by 25% to prevent future stockouts.",
-        "impact": "High",
-        "effort": "Low",
-        "roi": "Prevent $800 lost revenue",
-        "actions": ["Contact supplier immediately", "Place emergency order", "Adjust reorder points"]
-      },
-      {
-        "id": 3,
-        "category": "Menu Optimization",
-        "severity": "medium",
-        "icon": "TrendingUp",
-        "iconBg": "bg-blue-100",
-        "iconColor": "text-blue-600",
-        "title": "Create Coffee + Croissant Combo",
-        "description": "Market basket analysis reveals 68% of customers who buy Cappuccino also purchase Croissants. This is the strongest product association in your menu.",
-        "recommendation": "Launch a 'Morning Starter' combo bundling Cappuccino + Croissant at $10.99 (vs $12.50 separate). Projected to increase combo sales by 24%.",
-        "impact": "Medium",
-        "effort": "Low",
-        "roi": "+$1.8K/month",
-        "actions": ["Design combo offer", "Update POS system", "Create marketing materials"]
-      },
-      {
-        "id": 4,
-        "category": "Pricing Strategy",
-        "severity": "medium",
-        "icon": "DollarSign",
-        "iconBg": "bg-green-100",
-        "iconColor": "text-green-600",
-        "title": "Espresso Underpriced vs Market",
-        "description": "Competitor analysis shows your Espresso is priced 15% below market average despite receiving the highest quality ratings (4.8/5).",
-        "recommendation": "Increase Espresso price from $3.50 to $3.99 (14% increase). Quality perception supports premium pricing. Minimal impact on demand expected.",
-        "impact": "Medium",
-        "effort": "Low",
-        "roi": "+$980/month",
-        "actions": ["Update pricing", "Emphasize quality in marketing", "Monitor customer response"]
-      },
-      {
-        "id": 5,
-        "category": "Customer Experience",
-        "severity": "medium",
-        "icon": "Users",
-        "iconBg": "bg-purple-100",
-        "iconColor": "text-purple-600",
-        "title": "Service Speed Improvement Needed",
-        "description": "Sentiment analysis shows 18% of recent reviews mention slow service during lunch rush (12-2 PM). Average wait time: 8.5 minutes vs target 5 minutes.",
-        "recommendation": "Add 1 additional staff member during peak lunch hours. Implement mobile order-ahead system to reduce in-store wait times.",
-        "impact": "High",
-        "effort": "Medium",
-        "roi": "Improve satisfaction +12%",
-        "actions": ["Hire part-time staff", "Implement mobile ordering", "Optimize workflow"]
-      },
-      {
-        "id": 8,
-        "category": "Risk Alert",
-        "severity": "high",
-        "icon": "AlertTriangle",
-        "iconBg": "bg-red-100",
-        "iconColor": "text-red-600",
-        "title": "Negative Review Spike Detected",
-        "description": "Negative sentiment increased by 45% in the past week. Primary complaints: coffee temperature (12 mentions) and slow service (8 mentions).",
-        "recommendation": "Immediate action required: Check espresso machine calibration, retrain baristas on temperature standards, and increase lunch staff.",
-        "impact": "High",
-        "effort": "Low",
-        "roi": "Prevent reputation damage",
-        "actions": ["Equipment check", "Staff retraining", "Respond to reviews"]
-      }
-    ]
-    return {"recommendations": recommendations}
+def get_recommendations(shop: str = Depends(get_current_shop)):
+    """Generate shop-specific recommendations from basket analysis."""
+    result = BasketAnalysisEngine(outlet=shop).get_analysis()
+    recs   = []
+
+    if "error" not in result:
+        rules   = result.get("rules", [])
+        bundles = result.get("bundles", [])
+
+        # Rec 1 — top bundle opportunity
+        if bundles:
+            b = bundles[0]
+            recs.append({
+                "id": 1,
+                "category": "Menu Optimisation",
+                "severity": "high",
+                "icon": "TrendingUp",
+                "iconBg": "bg-blue-100",
+                "iconColor": "text-blue-600",
+                "title": f"Create '{b['name']}'",
+                "description": (
+                    f"Market basket analysis shows {b['confidence']:.0f}% of customers "
+                    f"who buy {b['items'][0]} also buy {b['items'][1]} "
+                    f"(lift: {b['lift']:.1f}x). Bundling them boosts average order value."
+                ),
+                "recommendation": (
+                    f"Launch a combo deal for '{b['items'][0]} + {b['items'][1]}'. "
+                    "Offer a 5-10% discount vs. buying separately to drive uptake."
+                ),
+                "impact": "High",
+                "effort": "Low",
+                "roi": "+15-25% on combo items",
+                "actions": ["Add combo to menu", "Highlight on board", "Train staff to suggest"],
+            })
+
+        # Rec 2 — top item upsell
+        top_items = result.get("top_items", [])
+        if top_items:
+            ti = top_items[0]
+            # Find a complementary item from rules
+            companion = next(
+                (r["consequent"] for r in rules if r["antecedent"] == ti["item"]),
+                top_items[1]["item"] if len(top_items) > 1 else "a side dish"
+            )
+            recs.append({
+                "id": 2,
+                "category": "Revenue Optimisation",
+                "severity": "medium",
+                "icon": "DollarSign",
+                "iconBg": "bg-green-100",
+                "iconColor": "text-green-600",
+                "title": f"Upsell {companion} with {ti['item']} orders",
+                "description": (
+                    f"{ti['item']} appears in {ti['pct']:.0f}% of transactions. "
+                    f"Pairing it with {companion} is a natural upsell opportunity."
+                ),
+                "recommendation": (
+                    f"Train staff to suggest '{companion}' whenever '{ti['item']}' is ordered."
+                ),
+                "impact": "Medium",
+                "effort": "Low",
+                "roi": "+8-12% per order",
+                "actions": ["Staff briefing", "POS prompt", "Weekly review"],
+            })
+
+        # Rec 3 — cross-sell rate
+        csr = result.get("cross_sell_rate", 0)
+        recs.append({
+            "id": 3,
+            "category": "Customer Experience",
+            "severity": "medium",
+            "icon": "Users",
+            "iconBg": "bg-purple-100",
+            "iconColor": "text-purple-600",
+            "title": "Improve Multi-Item Purchase Rate",
+            "description": (
+                f"Currently {csr:.0f}% of customers buy 2+ items in one visit. "
+                "Increasing this by just 5% significantly lifts daily revenue."
+            ),
+            "recommendation": (
+                "Display 'Goes well with…' signage next to your top 3 items. "
+                "Offer a small loyalty incentive for orders with 3+ items."
+            ),
+            "impact": "Medium",
+            "effort": "Low",
+            "roi": "+5-10% daily revenue",
+            "actions": ["Create pairing signage", "Update menu layout", "Introduce loyalty card"],
+        })
+
+    return {"recommendations": recs}

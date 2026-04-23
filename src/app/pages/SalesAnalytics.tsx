@@ -14,8 +14,8 @@ const API = "http://localhost:8000";
 
 // ─── Colour palette ───────────────────────────────────────────────────────────
 const OUTLET_COLORS = [
-  "#6F4E37","#1ABC9C","#3B82F6","#F59E0B","#EF4444",
-  "#8B5CF6","#EC4899","#10B981","#F97316",
+  "#6F4E37", "#1ABC9C", "#3B82F6", "#F59E0B", "#EF4444",
+  "#8B5CF6", "#EC4899", "#10B981", "#F97316",
 ];
 
 // ─── Helper: Indian rupee formatter ──────────────────────────────────────────
@@ -23,8 +23,8 @@ const inr = (n: number) =>
   n >= 1_00_00_000
     ? `₹${(n / 1_00_00_000).toFixed(1)}Cr`
     : n >= 1_00_000
-    ? `₹${(n / 1_00_000).toFixed(1)}L`
-    : `₹${n.toLocaleString("en-IN")}`;
+      ? `₹${(n / 1_00_000).toFixed(1)}L`
+      : `₹${n.toLocaleString("en-IN")}`;
 
 // ─── Active PieChart slice renderer ──────────────────────────────────────────
 const renderActiveShape = (props: any) => {
@@ -48,9 +48,9 @@ const renderActiveShape = (props: any) => {
 
 export function SalesAnalytics() {
   const { authHeader, user } = useAuth();
-  const [data, setData]     = useState<any>(null);
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState("");
+  const [error, setError] = useState("");
   const [activeIdx, setActiveIdx] = useState(0);
 
   // Sales upload state
@@ -123,12 +123,12 @@ export function SalesAnalytics() {
     </div>
   );
 
-  const kpis    = data?.kpis            || {};
-  const monthly = data?.monthly_trend   || [];
+  const kpis = data?.kpis || {};
+  const monthly = data?.monthly_trend || [];
   const outlets = data?.outlet_performance || [];
-  const topItems = data?.top_items      || [];
-  const dow     = data?.dow_pattern     || [];
-  const itemMix = data?.item_mix        || [];
+  const topItems = data?.top_items || [];
+  const dow = data?.dow_pattern || [];
+  const itemMix = data?.item_mix || [];
 
   return (
     <div className="p-8">
@@ -167,11 +167,10 @@ export function SalesAnalytics() {
 
       {/* Upload feedback */}
       {uploadMsg && (
-        <div className={`mb-4 p-3 rounded-lg text-sm ${
-          uploadMsg.startsWith("✅")
+        <div className={`mb-4 p-3 rounded-lg text-sm ${uploadMsg.startsWith("✅")
             ? "bg-green-50 text-green-700 border border-green-200"
             : "bg-red-50 text-red-700 border border-red-200"
-        }`}>
+          }`}>
           {uploadMsg}
         </div>
       )}
@@ -180,7 +179,7 @@ export function SalesAnalytics() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         {[
           {
-            label: "Total Revenue (2 yr)",
+            label: "Total Revenue (latest)",
             value: inr(kpis.total_revenue || 0),
             sub: `Current month ${inr(kpis.current_month_rev || 0)}`,
             change: kpis.revenue_growth,
@@ -244,19 +243,19 @@ export function SalesAnalytics() {
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
             <XAxis dataKey="month" stroke="#9CA3AF" tick={{ fontSize: 11 }} />
             <YAxis yAxisId="l" stroke="#9CA3AF" tick={{ fontSize: 11 }}
-              tickFormatter={v => v >= 1_00_000 ? `${(v/1_00_000).toFixed(0)}L` : `${v}`} />
+              tickFormatter={v => v >= 1_00_000 ? `${(v / 1_00_000).toFixed(0)}L` : `${v}`} />
             <YAxis yAxisId="r" orientation="right" stroke="#9CA3AF" tick={{ fontSize: 11 }}
               tickFormatter={v => v.toLocaleString("en-IN")} />
             <Tooltip
-              contentStyle={{ backgroundColor:"#fff", border:"1px solid #E5E7EB", borderRadius:10 }}
+              contentStyle={{ backgroundColor: "#fff", border: "1px solid #E5E7EB", borderRadius: 10 }}
               formatter={(val: any, name: string) =>
                 name === "Revenue (₹)" ? [inr(val), name] : [val.toLocaleString("en-IN"), name]}
             />
             <Legend />
             <Line yAxisId="l" type="monotone" dataKey="revenue" stroke="#6F4E37"
-              strokeWidth={3} dot={{ fill:"#6F4E37", r:4 }} name="Revenue (₹)" />
+              strokeWidth={3} dot={{ fill: "#6F4E37", r: 4 }} name="Revenue (₹)" />
             <Line yAxisId="r" type="monotone" dataKey="transactions" stroke="#1ABC9C"
-              strokeWidth={2.5} dot={{ fill:"#1ABC9C", r:3 }} strokeDasharray="6 3" name="Transactions" />
+              strokeWidth={2.5} dot={{ fill: "#1ABC9C", r: 3 }} strokeDasharray="6 3" name="Transactions" />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -271,7 +270,7 @@ export function SalesAnalytics() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {["Outlet","Demand Idx","Monthly Rev","MoM Growth","Transactions","AOV"].map(h => (
+                  {["Outlet", "Demand Idx", "Monthly Rev", "MoM Growth", "Transactions", "AOV"].map(h => (
                     <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       {h}
                     </th>
@@ -316,11 +315,11 @@ export function SalesAnalytics() {
             <BarChart data={dow} layout="vertical" margin={{ left: 0, right: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 10 }} stroke="#9CA3AF"
-                tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
               <YAxis dataKey="day" type="category" tick={{ fontSize: 11 }} stroke="#9CA3AF" width={28} />
               <Tooltip formatter={(v: any) => [inr(v), "Avg Revenue"]}
-                contentStyle={{ backgroundColor:"#fff", border:"1px solid #E5E7EB", borderRadius:8 }} />
-              <Bar dataKey="avg_revenue" radius={[0,4,4,0]}
+                contentStyle={{ backgroundColor: "#fff", border: "1px solid #E5E7EB", borderRadius: 8 }} />
+              <Bar dataKey="avg_revenue" radius={[0, 4, 4, 0]}
                 fill="url(#barGrad)" name="Avg Revenue" />
               <defs>
                 <linearGradient id="barGrad" x1="0" y1="0" x2="1" y2="0">
@@ -340,11 +339,11 @@ export function SalesAnalytics() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Revenue Items</h3>
           <div className="space-y-3">
-            {topItems.slice(0,8).map((item: any, i: number) => {
+            {topItems.slice(0, 8).map((item: any, i: number) => {
               const maxRev = topItems[0]?.revenue || 1;
               return (
                 <div key={i} className="flex items-center gap-3">
-                  <span className="w-5 text-xs font-bold text-gray-400">#{i+1}</span>
+                  <span className="w-5 text-xs font-bold text-gray-400">#{i + 1}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm font-medium text-gray-800 truncate">{item.item}</span>
@@ -384,7 +383,7 @@ export function SalesAnalytics() {
                 ))}
               </Pie>
               <Tooltip formatter={(v: any) => [inr(v), "Revenue"]}
-                contentStyle={{ borderRadius:8 }} />
+                contentStyle={{ borderRadius: 8 }} />
             </PieChart>
           </ResponsiveContainer>
           <div className="flex flex-wrap gap-2 mt-2 justify-center">

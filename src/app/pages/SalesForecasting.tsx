@@ -99,6 +99,31 @@ export function SalesForecasting() {
   const itemDemand    = data?.item_demand_forecast || [];
   const modelInfo     = data?.model_info          || {};
 
+  // Detect FastAPI error response (e.g. {"detail": "..."})
+  if (data?.detail && !data?.chart_data) return (
+    <div className="p-8">
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+        <p className="text-red-600 font-semibold mb-2">Forecast model error</p>
+        <p className="text-red-400 text-sm mb-4">{data.detail}</p>
+        <button onClick={() => load(horizon)}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+          Retry
+        </button>
+      </div>
+    </div>
+  );
+
+  // Blank guard — data loaded but empty
+  if (!data || chartData.length === 0) return (
+    <div className="p-8 min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-[#1ABC9C] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-gray-600 font-medium">Running Forecast Model...</p>
+        <p className="text-gray-400 text-sm mt-1">STL Decomposition + ARIMA(1,1,1) · {user?.shop}</p>
+      </div>
+    </div>
+  );
+
   // Confidence colour
   const confColor = kpis.model_confidence >= 80
     ? "text-emerald-600" : kpis.model_confidence >= 60
