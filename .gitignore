@@ -34,3 +34,12 @@ coverage/
 
 # Optional
 .cache/
+
+
+sales_model/
+venv
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo

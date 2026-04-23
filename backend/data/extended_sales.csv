@@ -1,0 +1,181 @@
+date,revenue,transactions,day_of_week,is_weekend,product_category_majority,region,discount_pct,customer_segment_majority
+2025-10-25,2650,220,5,1,Pastry,South Campus,0,Student
+2025-10-26,2858,238,6,1,Food,Student Union,20,Student
+2025-10-27,1510,125,0,0,Pastry,Student Union,0,Faculty
+2025-10-28,1499,124,1,0,Coffee,North Campus,0,Student
+2025-10-29,1733,144,2,0,Coffee,Library,10,Visitor
+2025-10-30,1797,149,3,0,Pastry,Student Union,0,Faculty
+2025-10-31,1760,146,4,0,Cold Beverage,North Campus,0,Visitor
+2025-11-01,2357,196,5,1,Coffee,Library,0,Student
+2025-11-02,2448,204,6,1,Pastry,South Campus,0,Faculty
+2025-11-03,1657,138,0,0,Coffee,South Campus,0,Staff
+2025-11-04,1772,147,1,0,Food,Student Union,0,Student
+2025-11-05,1648,137,2,0,Coffee,South Campus,20,Faculty
+2025-11-06,1710,142,3,0,Food,Library,0,Student
+2025-11-07,1934,161,4,0,Coffee,Student Union,0,Student
+2025-11-08,2416,201,5,1,Coffee,Student Union,0,Student
+2025-11-09,2796,233,6,1,Pastry,North Campus,10,Staff
+2025-11-10,1646,137,0,0,Tea,South Campus,10,Staff
+2025-11-11,1772,147,1,0,Coffee,South Campus,0,Faculty
+2025-11-12,1756,146,2,0,Food,Library,0,Visitor
+2025-11-13,2084,173,3,0,Coffee,Library,0,Visitor
+2025-11-14,2145,178,4,0,Tea,Library,0,Staff
+2025-11-15,2745,228,5,1,Cold Beverage,North Campus,0,Visitor
+2025-11-16,2471,205,6,1,Coffee,North Campus,20,Faculty
+2025-11-17,1355,112,0,0,Pastry,South Campus,10,Visitor
+2025-11-18,1641,136,1,0,Coffee,Library,0,Visitor
+2025-11-19,1807,150,2,0,Pastry,Student Union,10,Staff
+2025-11-20,1800,150,3,0,Coffee,Student Union,10,Staff
+2025-11-21,1703,141,4,0,Food,Student Union,0,Visitor
+2025-11-22,2320,193,5,1,Pastry,Student Union,10,Student
+2025-11-23,2492,207,6,1,Cold Beverage,North Campus,10,Visitor
+2025-11-24,1571,130,0,0,Pastry,Student Union,10,Visitor
+2025-11-25,1784,148,1,0,Pastry,North Campus,0,Staff
+2025-11-26,1936,161,2,0,Tea,North Campus,0,Staff
+2025-11-27,2030,169,3,0,Pastry,North Campus,0,Student
+2025-11-28,2191,182,4,0,Coffee,North Campus,20,Faculty
+2025-11-29,2577,214,5,1,Food,Student Union,0,Visitor
+2025-11-30,2588,215,6,1,Cold Beverage,Library,10,Staff
+2025-12-01,1304,108,0,0,Tea,South Campus,0,Faculty
+2025-12-02,1426,118,1,0,Cold Beverage,South Campus,20,Faculty
+2025-12-03,1964,163,2,0,Cold Beverage,Library,0,Visitor
+2025-12-04,2062,171,3,0,Cold Beverage,South Campus,0,Staff
+2025-12-05,2136,178,4,0,Pastry,South Campus,0,Visitor
+2025-12-06,2570,214,5,1,Food,Library,0,Visitor
+2025-12-07,2400,200,6,1,Cold Beverage,Library,0,Faculty
+2025-12-08,1438,119,0,0,Coffee,North Campus,10,Staff
+2025-12-09,1848,154,1,0,Cold Beverage,South Campus,0,Visitor
+2025-12-10,1802,150,2,0,Coffee,South Campus,0,Faculty
+2025-12-11,1996,166,3,0,Coffee,South Campus,20,Staff
+2025-12-12,2052,171,4,0,Pastry,Library,10,Faculty
+2025-12-13,2497,208,5,1,Coffee,Student Union,0,Faculty
+2025-12-14,2768,230,6,1,Food,Student Union,0,Student
+2025-12-15,1427,118,0,0,Coffee,Library,0,Faculty
+2025-12-16,1791,149,1,0,Tea,Library,10,Staff
+2025-12-17,1706,142,2,0,Food,South Campus,0,Staff
+2025-12-18,1851,154,3,0,Tea,North Campus,0,Staff
+2025-12-19,1701,141,4,0,Tea,South Campus,0,Staff
+2025-12-20,2352,196,5,1,Tea,Student Union,0,Visitor
+2025-12-21,2569,214,6,1,Coffee,Library,10,Student
+2025-12-22,1732,144,0,0,Food,Library,0,Visitor
+2025-12-23,1627,135,1,0,Pastry,North Campus,10,Staff
+2025-12-24,1646,137,2,0,Pastry,North Campus,0,Student
+2025-12-25,1688,140,3,0,Coffee,Student Union,10,Staff
+2025-12-26,1854,154,4,0,Pastry,Student Union,0,Visitor
+2025-12-27,2305,192,5,1,Food,Library,0,Faculty
+2025-12-28,2602,216,6,1,Food,North Campus,0,Staff
+2025-12-29,1577,131,0,0,Tea,Library,0,Student
+2025-12-30,1725,143,1,0,Food,North Campus,0,Visitor
+2025-12-31,1887,157,2,0,Coffee,North Campus,0,Student
+2026-01-01,1620,135,3,0,Tea,North Campus,0,Student
+2026-01-02,1979,164,4,0,Tea,South Campus,0,Staff
+2026-01-03,2582,215,5,1,Tea,Library,20,Staff
+2026-01-04,2575,214,6,1,Food,Library,0,Visitor
+2026-01-05,1780,148,0,0,Coffee,South Campus,0,Student
+2026-01-06,1881,156,1,0,Food,Student Union,0,Student
+2026-01-07,1724,143,2,0,Cold Beverage,North Campus,0,Faculty
+2026-01-08,1832,152,3,0,Pastry,South Campus,0,Staff
+2026-01-09,1958,163,4,0,Food,North Campus,0,Faculty
+2026-01-10,2731,227,5,1,Coffee,South Campus,10,Student
+2026-01-11,2463,205,6,1,Cold Beverage,Library,0,Staff
+2026-01-12,1334,111,0,0,Tea,Library,0,Student
+2026-01-13,1431,119,1,0,Food,Student Union,0,Staff
+2026-01-14,1640,136,2,0,Coffee,North Campus,20,Staff
+2026-01-15,2057,171,3,0,Pastry,North Campus,0,Student
+2026-01-16,2037,169,4,0,Pastry,Library,0,Staff
+2026-01-17,2302,191,5,1,Pastry,North Campus,20,Staff
+2026-01-18,2610,217,6,1,Tea,Library,0,Visitor
+2026-01-19,1598,133,0,0,Cold Beverage,South Campus,0,Faculty
+2026-01-20,1496,124,1,0,Cold Beverage,North Campus,10,Staff
+2026-01-21,1792,149,2,0,Cold Beverage,South Campus,0,Student
+2026-01-22,1647,137,3,0,Pastry,Library,20,Student
+2026-01-23,1811,150,4,0,Coffee,Library,0,Student
+2026-01-24,2759,229,5,1,Pastry,Student Union,0,Visitor
+2026-01-25,2530,210,6,1,Coffee,Student Union,10,Staff
+2026-01-26,1645,137,0,0,Coffee,South Campus,0,Student
+2026-01-27,1691,140,1,0,Cold Beverage,Student Union,0,Visitor
+2026-01-28,1821,151,2,0,Cold Beverage,South Campus,0,Student
+2026-01-29,2009,167,3,0,Tea,Library,20,Visitor
+2026-01-30,2153,179,4,0,Tea,Library,0,Staff
+2026-01-31,2355,196,5,1,Food,Library,0,Staff
+2026-02-01,2893,241,6,1,Pastry,Library,0,Faculty
+2026-02-02,1532,127,0,0,Cold Beverage,Library,10,Visitor
+2026-02-03,1825,152,1,0,Cold Beverage,North Campus,0,Staff
+2026-02-04,1952,162,2,0,Pastry,Student Union,0,Visitor
+2026-02-05,1637,136,3,0,Tea,South Campus,10,Faculty
+2026-02-06,1941,161,4,0,Tea,North Campus,0,Faculty
+2026-02-07,2783,231,5,1,Food,Library,10,Staff
+2026-02-08,2649,220,6,1,Food,Library,0,Faculty
+2026-02-09,1521,126,0,0,Food,North Campus,0,Staff
+2026-02-10,1583,131,1,0,Tea,Student Union,0,Faculty
+2026-02-11,1896,158,2,0,Pastry,South Campus,10,Visitor
+2026-02-12,1772,147,3,0,Tea,Student Union,0,Visitor
+2026-02-13,1778,148,4,0,Cold Beverage,Library,0,Staff
+2026-02-14,2667,222,5,1,Pastry,North Campus,10,Student
+2026-02-15,2589,215,6,1,Cold Beverage,South Campus,0,Visitor
+2026-02-16,1713,142,0,0,Coffee,Library,0,Student
+2026-02-17,1651,137,1,0,Tea,South Campus,0,Faculty
+2026-02-18,1677,139,2,0,Food,North Campus,10,Visitor
+2026-02-19,1939,161,3,0,Pastry,Student Union,0,Visitor
+2026-02-20,1770,147,4,0,Coffee,Student Union,10,Student
+2026-02-21,2635,219,5,1,Coffee,Library,0,Staff
+2026-02-22,2603,216,6,1,Coffee,Library,0,Faculty
+2026-02-23,1793,149,0,0,Tea,Library,0,Visitor
+2026-02-24,1891,157,1,0,Food,North Campus,0,Staff
+2026-02-25,1723,143,2,0,Cold Beverage,South Campus,10,Visitor
+2026-02-26,1836,153,3,0,Coffee,Student Union,0,Student
+2026-02-27,1911,159,4,0,Coffee,Library,0,Faculty
+2026-02-28,2788,232,5,1,Food,Student Union,0,Faculty
+2026-03-01,2440,203,6,1,Cold Beverage,North Campus,0,Student
+2026-03-02,1535,127,0,0,Coffee,Student Union,0,Visitor
+2026-03-03,1432,119,1,0,Cold Beverage,Student Union,0,Visitor
+2026-03-04,1964,163,2,0,Tea,North Campus,20,Staff
+2026-03-05,1943,161,3,0,Food,North Campus,0,Faculty
+2026-03-06,2095,174,4,0,Coffee,North Campus,0,Visitor
+2026-03-07,2599,216,5,1,Pastry,Student Union,0,Faculty
+2026-03-08,2788,232,6,1,Coffee,South Campus,10,Student
+2026-03-09,1594,132,0,0,Pastry,South Campus,0,Visitor
+2026-03-10,1488,124,1,0,Tea,North Campus,20,Staff
+2026-03-11,1980,165,2,0,Coffee,North Campus,0,Visitor
+2026-03-12,1785,148,3,0,Pastry,Student Union,0,Faculty
+2026-03-13,2101,175,4,0,Cold Beverage,North Campus,0,Visitor
+2026-03-14,2536,211,5,1,Cold Beverage,South Campus,10,Faculty
+2026-03-15,2551,212,6,1,Tea,Student Union,0,Visitor
+2026-03-16,1665,138,0,0,Cold Beverage,North Campus,10,Student
+2026-03-17,1472,122,1,0,Cold Beverage,South Campus,20,Faculty
+2026-03-18,1612,134,2,0,Pastry,North Campus,0,Staff
+2026-03-19,2090,174,3,0,Pastry,North Campus,0,Staff
+2026-03-20,2120,176,4,0,Coffee,South Campus,10,Faculty
+2026-03-21,2446,203,5,1,Food,Student Union,0,Visitor
+2026-03-22,2833,236,6,1,Pastry,Library,10,Faculty
+2026-03-23,1658,138,0,0,Food,North Campus,20,Student
+2026-03-24,1748,145,1,0,Cold Beverage,Library,10,Student
+2026-03-25,1668,139,2,0,Food,North Campus,0,Student
+2026-03-26,1939,161,3,0,Tea,Student Union,10,Staff
+2026-03-27,1764,147,4,0,Tea,Library,0,Visitor
+2026-03-28,2635,219,5,1,Cold Beverage,Library,10,Student
+2026-03-29,2602,216,6,1,Tea,Library,0,Staff
+2026-03-30,1699,141,0,0,Pastry,South Campus,0,Visitor
+2026-03-31,1603,133,1,0,Food,Student Union,0,Faculty
+2026-04-01,1980,165,2,0,Tea,Library,0,Visitor
+2026-04-02,1683,140,3,0,Tea,Library,0,Faculty
+2026-04-03,2175,181,4,0,Food,South Campus,10,Faculty
+2026-04-04,2430,202,5,1,Coffee,North Campus,0,Faculty
+2026-04-05,2519,209,6,1,Cold Beverage,South Campus,0,Faculty
+2026-04-06,1550,129,0,0,Pastry,North Campus,20,Staff
+2026-04-07,1466,122,1,0,Coffee,Library,0,Visitor
+2026-04-08,1706,142,2,0,Coffee,North Campus,10,Student
+2026-04-09,2045,170,3,0,Food,Library,0,Student
+2026-04-10,2148,179,4,0,Food,North Campus,10,Staff
+2026-04-11,2436,203,5,1,Food,South Campus,0,Faculty
+2026-04-12,2447,203,6,1,Coffee,Library,10,Faculty
+2026-04-13,1388,115,0,0,Tea,North Campus,0,Student
+2026-04-14,1614,134,1,0,Cold Beverage,North Campus,0,Visitor
+2026-04-15,1654,137,2,0,Tea,North Campus,10,Visitor
+2026-04-16,1749,145,3,0,Cold Beverage,Student Union,0,Faculty
+2026-04-17,1734,144,4,0,Coffee,North Campus,20,Faculty
+2026-04-18,2469,205,5,1,Pastry,Library,0,Staff
+2026-04-19,2889,240,6,1,Cold Beverage,North Campus,0,Faculty
+2026-04-20,1770,147,0,0,Pastry,North Campus,0,Student
+2026-04-21,1607,133,1,0,Pastry,North Campus,0,Faculty
+2026-04-22,1925,160,2,0,Tea,South Campus,10,Faculty

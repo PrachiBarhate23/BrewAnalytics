@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   AlertTriangle,
   TrendingUp,
@@ -10,154 +11,53 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-const recommendations = [
-  {
-    id: 1,
-    category: "Revenue Optimization",
-    severity: "high",
-    icon: AlertTriangle,
-    iconBg: "bg-red-100",
-    iconColor: "text-red-600",
-    title: "Weekday Evening Revenue Drop Alert",
-    description:
-      "Sales data shows a 12% decline in weekday evening revenue (5-8 PM) compared to last month. Customer traffic decreased by 18% during this period.",
-    recommendation:
-      "Implement a 'Happy Hour' promotion offering 10% discount on beverages during 5-7 PM weekdays. Expected revenue increase: +$2,400/month.",
-    impact: "High",
-    effort: "Low",
-    roi: "+$2.4K/month",
-    actions: ["Create promotion campaign", "Update menu boards", "Train staff on new offers"],
-  },
-  {
-    id: 2,
-    category: "Inventory Management",
-    severity: "high",
-    icon: Package,
-    iconBg: "bg-orange-100",
-    iconColor: "text-orange-600",
-    title: "Croissant Inventory Running Low",
-    description:
-      "Current inventory levels are critically low. Based on demand forecast, stockout risk is 85% within 48 hours. High demand expected this weekend.",
-    recommendation:
-      "Immediate restock of 200 units recommended. Consider increasing safety stock levels by 25% to prevent future stockouts.",
-    impact: "High",
-    effort: "Low",
-    roi: "Prevent $800 lost revenue",
-    actions: ["Contact supplier immediately", "Place emergency order", "Adjust reorder points"],
-  },
-  {
-    id: 3,
-    category: "Menu Optimization",
-    severity: "medium",
-    icon: TrendingUp,
-    iconBg: "bg-blue-100",
-    iconColor: "text-blue-600",
-    title: "Create Coffee + Croissant Combo",
-    description:
-      "Market basket analysis reveals 68% of customers who buy Cappuccino also purchase Croissants. This is the strongest product association in your menu.",
-    recommendation:
-      "Launch a 'Morning Starter' combo bundling Cappuccino + Croissant at $10.99 (vs $12.50 separate). Projected to increase combo sales by 24%.",
-    impact: "Medium",
-    effort: "Low",
-    roi: "+$1.8K/month",
-    actions: ["Design combo offer", "Update POS system", "Create marketing materials"],
-  },
-  {
-    id: 4,
-    category: "Pricing Strategy",
-    severity: "medium",
-    icon: DollarSign,
-    iconBg: "bg-green-100",
-    iconColor: "text-green-600",
-    title: "Espresso Underpriced vs Market",
-    description:
-      "Competitor analysis shows your Espresso is priced 15% below market average despite receiving the highest quality ratings (4.8/5).",
-    recommendation:
-      "Increase Espresso price from $3.50 to $3.99 (14% increase). Quality perception supports premium pricing. Minimal impact on demand expected.",
-    impact: "Medium",
-    effort: "Low",
-    roi: "+$980/month",
-    actions: ["Update pricing", "Emphasize quality in marketing", "Monitor customer response"],
-  },
-  {
-    id: 5,
-    category: "Customer Experience",
-    severity: "medium",
-    icon: Users,
-    iconBg: "bg-purple-100",
-    iconColor: "text-purple-600",
-    title: "Service Speed Improvement Needed",
-    description:
-      "Sentiment analysis shows 18% of recent reviews mention slow service during lunch rush (12-2 PM). Average wait time: 8.5 minutes vs target 5 minutes.",
-    recommendation:
-      "Add 1 additional staff member during peak lunch hours. Implement mobile order-ahead system to reduce in-store wait times.",
-    impact: "High",
-    effort: "Medium",
-    roi: "Improve satisfaction +12%",
-    actions: ["Hire part-time staff", "Implement mobile ordering", "Optimize workflow"],
-  },
-  {
-    id: 6,
-    category: "Marketing Opportunity",
-    severity: "low",
-    icon: Target,
-    iconBg: "bg-teal-100",
-    iconColor: "text-teal-600",
-    title: "Leverage Positive Food Quality Reviews",
-    description:
-      "85% positive sentiment on food quality - significantly higher than competitors (avg 72%). This is your strongest differentiator.",
-    recommendation:
-      "Launch a social media campaign highlighting fresh ingredients and customer testimonials. Focus on Instagram and local food blogs.",
-    impact: "Medium",
-    effort: "Medium",
-    roi: "Increase awareness +20%",
-    actions: ["Create content calendar", "Collect customer testimonials", "Partner with food influencers"],
-  },
-  {
-    id: 7,
-    category: "Operational Efficiency",
-    severity: "low",
-    icon: Zap,
-    iconBg: "bg-yellow-100",
-    iconColor: "text-yellow-600",
-    title: "Peak Hour Staffing Optimization",
-    description:
-      "Sales forecasting shows Saturday mornings (8-11 AM) generate 35% of weekend revenue but are understaffed by 20%.",
-    recommendation:
-      "Increase Saturday morning staff from 4 to 5 employees. Predictive model shows this will reduce wait times by 40% and increase revenue by 8%.",
-    impact: "Medium",
-    effort: "Low",
-    roi: "+$1.2K/month",
-    actions: ["Adjust staff schedule", "Recruit weekend staff", "Monitor performance metrics"],
-  },
-  {
-    id: 8,
-    category: "Risk Alert",
-    severity: "high",
-    icon: AlertTriangle,
-    iconBg: "bg-red-100",
-    iconColor: "text-red-600",
-    title: "Negative Review Spike Detected",
-    description:
-      "Negative sentiment increased by 45% in the past week. Primary complaints: coffee temperature (12 mentions) and slow service (8 mentions).",
-    recommendation:
-      "Immediate action required: Check espresso machine calibration, retrain baristas on temperature standards, and increase lunch staff.",
-    impact: "High",
-    effort: "Low",
-    roi: "Prevent reputation damage",
-    actions: ["Equipment check", "Staff retraining", "Respond to reviews"],
-  },
-];
+// Map string icon names from API to Lucide components
+const IconMap: Record<string, any> = {
+  AlertTriangle,
+  TrendingUp,
+  DollarSign,
+  Package,
+  Users,
+  Target,
+  Zap,
+  Clock,
+};
 
-const priorityScore = (rec: typeof recommendations[0]) => {
+const priorityScore = (rec: any) => {
   const severityScore = rec.severity === "high" ? 3 : rec.severity === "medium" ? 2 : 1;
   const impactScore = rec.impact === "High" ? 3 : rec.impact === "Medium" ? 2 : 1;
   return severityScore * 10 + impactScore;
 };
 
-const sortedRecommendations = [...recommendations].sort((a, b) => priorityScore(b) - priorityScore(a));
-
 export function Recommendations() {
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/recommendations")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.recommendations) {
+          setRecommendations(json.recommendations);
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching recommendations:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return <div className="p-8">Loading recommendations...</div>;
+  }
+
+  const sortedRecommendations = [...recommendations].sort((a, b) => priorityScore(b) - priorityScore(a));
+
+  const highPriority = recommendations.filter(r => r.severity === "high").length;
+  const mediumPriority = recommendations.filter(r => r.severity === "medium").length;
+  const lowPriority = recommendations.filter(r => r.severity === "low").length;
+
   return (
     <div className="p-8">
       {/* Page Header */}
@@ -173,7 +73,7 @@ export function Recommendations() {
             <h3 className="text-sm font-medium opacity-90">High Priority</h3>
             <AlertTriangle className="w-5 h-5" />
           </div>
-          <p className="text-3xl font-bold">3</p>
+          <p className="text-3xl font-bold">{highPriority}</p>
           <p className="text-sm opacity-80">Require immediate action</p>
         </div>
 
@@ -182,7 +82,7 @@ export function Recommendations() {
             <h3 className="text-sm font-medium opacity-90">Medium Priority</h3>
             <Clock className="w-5 h-5" />
           </div>
-          <p className="text-3xl font-bold">4</p>
+          <p className="text-3xl font-bold">{mediumPriority}</p>
           <p className="text-sm opacity-80">Act within this week</p>
         </div>
 
@@ -191,7 +91,7 @@ export function Recommendations() {
             <h3 className="text-sm font-medium opacity-90">Low Priority</h3>
             <Target className="w-5 h-5" />
           </div>
-          <p className="text-3xl font-bold">1</p>
+          <p className="text-3xl font-bold">{lowPriority}</p>
           <p className="text-sm opacity-80">Plan for next month</p>
         </div>
 
@@ -208,7 +108,7 @@ export function Recommendations() {
       {/* Recommendations List */}
       <div className="space-y-6">
         {sortedRecommendations.map((rec) => {
-          const Icon = rec.icon;
+          const Icon = IconMap[rec.icon] || Zap;
           return (
             <div
               key={rec.id}
@@ -287,7 +187,7 @@ export function Recommendations() {
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-3">Action Steps:</h4>
                   <div className="space-y-2">
-                    {rec.actions.map((action, index) => (
+                    {rec.actions.map((action: string, index: number) => (
                       <div key={index} className="flex items-center gap-3 text-sm">
                         <div className="w-6 h-6 bg-[#6F4E37] text-white rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">
                           {index + 1}
