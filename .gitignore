@@ -34,3 +34,13 @@ coverage/
 
 # Optional
 .cache/
+
+# Models
+sales_model/
+sentiment_model/
+*.zip
+*.bin
+*.pt
+*.h5
+*.onnx
+*.xlsx
