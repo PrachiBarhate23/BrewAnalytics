@@ -53,6 +53,6 @@
   "sep_token": "[SEP]",
   "strip_accents": null,
   "tokenize_chinese_chars": true,
-  "tokenizer_class": "BertTokenizer",
+  "tokenizer_class": "DistilBertTokenizer",
   "unk_token": "[UNK]"
 }

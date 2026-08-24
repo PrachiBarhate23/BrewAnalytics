@@ -73,7 +73,7 @@ export function SalesForecasting() {
       <div className="text-center">
         <div className="w-16 h-16 border-4 border-[#1ABC9C] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
         <p className="text-gray-600 font-medium">Running Forecast Model…</p>
-        <p className="text-gray-400 text-sm mt-1">STL Decomposition + ARIMA(1,1,1) · {user?.shop}</p>
+        <p className="text-gray-400 text-sm mt-1">Facebook Prophet · {user?.shop}</p>
       </div>
     </div>
   );
@@ -119,7 +119,7 @@ export function SalesForecasting() {
       <div className="text-center">
         <div className="w-16 h-16 border-4 border-[#1ABC9C] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
         <p className="text-gray-600 font-medium">Running Forecast Model...</p>
-        <p className="text-gray-400 text-sm mt-1">STL Decomposition + ARIMA(1,1,1) · {user?.shop}</p>
+        <p className="text-gray-400 text-sm mt-1">Facebook Prophet · {user?.shop}</p>
       </div>
     </div>
   );
@@ -217,7 +217,7 @@ export function SalesForecasting() {
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Revenue Forecast with 95% Confidence Interval</h3>
             <p className="text-xs text-gray-400 mt-0.5">
-              Historical actuals (solid brown) · STL+ARIMA forecast (dashed teal) · Shaded band = 95% CI · {user?.shop}
+              Historical actuals (solid brown) · Prophet forecast (dashed teal) · Shaded band = 95% CI · {user?.shop}
             </p>
           </div>
           <div className="flex gap-2">
@@ -320,7 +320,7 @@ export function SalesForecasting() {
       {/* ── Outlet-Level Forecasts ────────────────────────────────────────────── */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-1">Outlet-Level 30-Day Revenue Forecast</h3>
-        <p className="text-xs text-gray-400 mb-5">ARIMA(1,1,0) per outlet · shaded bar = 95% confidence band</p>
+        <p className="text-xs text-gray-400 mb-5">Prophet per outlet · shaded bar = 95% confidence band</p>
         <div className="space-y-4">
           {outletFC.map((o: any, i: number) => {
             const maxRev = outletFC[0]?.next_30_rev || 1;
@@ -415,12 +415,11 @@ export function SalesForecasting() {
           <div>
             <h4 className="font-semibold text-gray-900 mb-1">Forecasting Methodology</h4>
             <p className="text-sm text-gray-600 leading-relaxed">
-              <strong>STL (Seasonal-Trend Decomposition via LOESS)</strong> separates the 2-year
-              daily revenue series into trend, weekly seasonal, and residual components.
-              An <strong>ARIMA(1,1,1)</strong> model is then fitted on the trend component
-              to project future values while the last observed seasonal cycle is re-added.
-              Confidence intervals are computed from the 1.96σ residual standard deviation.
-              Outlet-level forecasts use independent <strong>ARIMA(1,1,0)</strong> models fitted
+              <strong>Facebook Prophet</strong> is used to fit an additive model on the 2-year
+              daily revenue series, natively handling weekly and yearly seasonality while automatically
+              detecting trend changepoints. This robust approach handles holidays and missing data gracefully.
+              Confidence intervals are computed using Prophet's Bayesian uncertainty estimation (95% CI).
+              Outlet-level forecasts use independent <strong>Prophet</strong> models fitted
               on each outlet's last 90 days.
             </p>
             <div className="flex flex-wrap gap-3 mt-3">

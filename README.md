@@ -10,8 +10,9 @@
 |---|---|
 | 🔐 **Auth** | JWT login/signup per shop — managers only see their own data |
 | 📊 **Sales Analytics** | Revenue KPIs, monthly trends, outlet comparisons, day-of-week patterns |
-| 🔮 **Sales Forecasting** | STL decomposition + ARIMA(1,1,1) with 95% confidence intervals |
-| 😊 **Sentiment Analysis** | Fine-tuned BERT for Positive / Neutral / Negative classification |
+| 🔮 **Sales Forecasting** | Facebook Prophet additive model with 95% confidence intervals |
+| 😊 **Sentiment Analysis** | Fine-tuned DistilBERT for Positive / Neutral / Negative classification |
+| 🛒 **Market Basket** | FP-Growth algorithm for association rules and bundle recommendations |
 | 🔍 **Aspect Analysis** | Keyword-driven Food / Service / Pricing / Ambience breakdown |
 | 📤 **Data Upload** | Separate upload buttons for reviews CSV and sales CSV |
 | 🖥️ **Terminal Logging** | ARIMA MAPE, STL confidence, sentiment accuracy printed on every call |
@@ -24,8 +25,9 @@
 - Python 3.9+ · FastAPI · Uvicorn
 - `python-jose[cryptography]` — JWT auth
 - `passlib[bcrypt]` — password hashing
-- `statsmodels` — STL + ARIMA forecasting
-- `transformers` + `torch` — BERT sentiment model
+- `prophet` — Facebook Prophet forecasting
+- `mlxtend` — FP-Growth Market Basket Analysis
+- `transformers` + `torch` — DistilBERT sentiment model
 - `pandas` · `scikit-learn` · `openpyxl`
 
 **Frontend**
@@ -40,7 +42,7 @@
 ### Prerequisites
 - **Python 3.9+** and a virtual environment (`venv`)
 - **Node.js v18+**
-- **8 GB+ RAM** (BERT model needs ~500 MB for inference)
+- **8 GB+ RAM** (DistilBERT model needs ~300 MB for inference)
 
 ---
 
@@ -65,7 +67,7 @@ uvicorn main:app --reload
 
 > The API will be live at **http://localhost:8000**  
 > On first run `users.json` is auto-seeded with all 9 shop accounts.  
-> The BERT model loads on the first `/api/sentiment/*` request (may take ~10 s).
+> The DistilBERT model loads on the first `/api/sentiment/*` request (may take ~10 s).
 
 ---
 
@@ -126,7 +128,7 @@ Log in at **http://localhost:5173** with any of these accounts:
 1. Go to **Sentiment Analysis**
 2. Click **"Upload Review Data (CSV)"**
 3. Select `sentiment_model/shops/vrindavan/test_reviews_vrindavan.csv`
-4. Watch the BERT model classify each review — terminal shows accuracy stats
+4. Watch the DistilBERT model classify each review — terminal shows accuracy stats
 5. Sentiment cards, trend chart, and word cloud all update
 
 ### 3. Upload Sales Data
@@ -137,7 +139,7 @@ Log in at **http://localhost:5173** with any of these accounts:
 
 ### 4. Sales Forecasting
 1. Go to **Sales Forecasting**
-2. Terminal shows: `ARIMA(1,1,1) · MAPE · Confidence %`
+2. Terminal shows: `Facebook Prophet (Additive Model) · MAPE · Confidence %`
 3. Change the **horizon** (30d / 60d / 90d / 180d) to see projections update
 4. Shaded area = 95% confidence interval
 
@@ -175,7 +177,7 @@ BrewAnalytics/
 │   └── extended_reviews.csv             # Source of truth (2304 rows)
 │
 ├── sales_model/
-│   ├── sales_model.py            # SalesAnalyticsEngine (STL + ARIMA)
+│   ├── sales_model.py            # SalesAnalyticsEngine (Prophet)
 │   ├── sales_data.csv            # 2-year synthetic campus sales dataset
 │   ├── data/
 │   │   └── <shop>_sales.csv      # Per-shop uploaded sales data
@@ -190,10 +192,10 @@ BrewAnalytics/
 │       │   ├── Login.tsx         # Sign In + Create Account tabs + quick demo
 │       │   ├── DashboardLayout.tsx  # Protected route wrapper
 │       │   ├── DashboardOverview.tsx # Live KPIs from API
-│       │   ├── SentimentAnalysis.tsx # Upload + BERT results + word cloud
+│       │   ├── SentimentAnalysis.tsx # Upload + DistilBERT results + word cloud
 │       │   ├── AspectAnalysis.tsx    # Aspect breakdown + phrase drill-down
 │       │   ├── SalesAnalytics.tsx    # Upload + KPIs + charts + outlet table
-│       │   └── SalesForecasting.tsx  # ARIMA chart + seasonality + CI bands
+│       │   └── SalesForecasting.tsx  # Prophet chart + seasonality + CI bands
 │       └── components/
 │           ├── Header.tsx        # Shop badge + logout button
 │           └── Sidebar.tsx
@@ -206,25 +208,23 @@ BrewAnalytics/
 
 ## 🧠 Model Architecture
 
-### Sentiment — Fine-tuned BERT
-- Base: `bert-base-uncased`
+### Sentiment — Fine-tuned DistilBERT
+- Base: `distilbert-base-uncased`
 - Task: 3-class classification (Positive / Neutral / Negative)
 - Both-Side Analysis: if |pos_score − neg_score| < 0.20 → classified as **Neutral**
 - Confidence printed to terminal on every upload and live prediction
 
-### Sales Forecasting — STL + ARIMA
+### Sales Forecasting — Facebook Prophet
 ```
 2-year daily revenue
         ↓
-STL (period=7, robust=True)
+ Prophet Additive Model
         ↓
-  Trend | Seasonal | Residual
-        ↓           ↓
- ARIMA(1,1,1)   Tile last 7-day cycle
-        ↓           ↓
-   Trend forecast + Seasonal = Final forecast
+ Yearly + Weekly Seasonality
         ↓
- 95% CI from 1.96 × residual σ
+ Auto Changepoint Detection
+        ↓
+ Final forecast with 95% CI
 ```
 - **Terminal output on every call**: outlet name, horizon, MAPE %, confidence %, residual std
 
@@ -236,8 +236,8 @@ When any forecast or sentiment request is made, the backend prints:
 
 ```
 ============================================================
-🤖  [ARIMA] Outlet: Vrindavan | Horizon: 90d
-    Method         : ARIMA(1,1,1) + STL Decomposition
+🤖  [Prophet] Outlet: Vrindavan | Horizon: 90d
+    Method         : Facebook Prophet (Additive Model)
     Data points    : 730
     Residual Std   : 1842.33
     MAPE (approx)  : 8.4%

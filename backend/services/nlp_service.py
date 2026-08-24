@@ -18,7 +18,7 @@ def get_predictor():
         try:
             _predictor = SentimentPredictor(MODEL_DIR)
         except Exception as e:
-            print(f"Failed to load BERT predictor. Exception: {e}")
+            print(f"Failed to load DistilBERT predictor. Exception: {e}")
             import traceback
             traceback.print_exc()
             return None

@@ -44,7 +44,7 @@ export function MarketBasket() {
       <div className="text-center">
         <div className="w-16 h-16 border-4 border-[#6F4E37] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
         <p className="text-gray-600 font-medium">Running Market Basket Analysis…</p>
-        <p className="text-gray-400 text-sm mt-1">Co-occurrence mining · {user?.shop}</p>
+        <p className="text-gray-400 text-sm mt-1">FP-Growth Algorithm · {user?.shop}</p>
       </div>
     </div>
   );
@@ -74,7 +74,7 @@ export function MarketBasket() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-1">Market Basket Analysis</h1>
           <p className="text-gray-500 text-sm">
-            {user?.shop} · Item co-occurrence mining · {kpis.total_transactions?.toLocaleString("en-IN")} transactions analysed
+            {user?.shop} · FP-Growth pattern mining · {kpis.total_transactions?.toLocaleString("en-IN")} transactions analysed
           </p>
         </div>
         <button onClick={load}

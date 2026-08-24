@@ -1,7 +1,7 @@
 """
-BrewAnalytics - BERT Sentiment Prediction (Inference)
-=====================================================
-Loads the fine-tuned BERT model and runs sentiment predictions
+BrewAnalytics - DistilBERT Sentiment Prediction (Inference)
+===========================================================
+Loads the fine-tuned DistilBERT model and runs sentiment predictions
 on actual generated survey reviews from extended_reviews.csv.
 """
 
@@ -9,7 +9,7 @@ import os
 import torch
 import pandas as pd
 import random
-from transformers import BertTokenizer, BertForSequenceClassification
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -25,13 +25,13 @@ SENTIMENT_EMOJI = {"Positive": "😊", "Neutral": "😐", "Negative": "😞"}
 
 # ─── Predictor class ────────────────────────────────────────────────────────
 class SentimentPredictor:
-    """Loads a fine-tuned BERT model and predicts sentiment."""
+    """Loads a fine-tuned DistilBERT model and predicts sentiment."""
 
     def __init__(self, model_dir: str):
         print(f"  Loading model from: {model_dir}")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.tokenizer = BertTokenizer.from_pretrained(model_dir)
-        self.model = BertForSequenceClassification.from_pretrained(model_dir)
+        self.tokenizer = DistilBertTokenizer.from_pretrained(model_dir)
+        self.model = DistilBertForSequenceClassification.from_pretrained(model_dir)
         self.model = self.model.to(self.device)
         self.model.eval()
         print(f"  Model loaded on: {self.device}")
@@ -77,7 +77,7 @@ class SentimentPredictor:
 
 def main():
     print("=" * 70)
-    print("  BrewAnalytics - BERT Sentiment Prediction Demo")
+    print("  BrewAnalytics - DistilBERT Sentiment Prediction Demo")
     print("  (Using Data from extended_reviews.csv)")
     print("=" * 70)
 
@@ -142,7 +142,7 @@ def main():
             print(f"  │  {emoji} [{result['sentiment']:>8}] ({result['confidence']:.0%}) \"{text_disp}\"")
         print(f"  └{'─' * 65}")
 
-    print("\n  Model: bert-base-uncased (fine-tuned on BrewAnalytics Survey Data)")
+    print("\n  Model: distilbert-base-uncased (fine-tuned on BrewAnalytics Survey Data)")
     print(f"  Device: {predictor.device}")
     print("=" * 70)
 

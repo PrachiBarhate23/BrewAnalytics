@@ -56,9 +56,9 @@ FastAPI Backend  (Python, port 8000)
   ├── Sales Router         → Sales KPIs + STL-ARIMA forecasting + competitor data
   └── Recommendations      → Derived recommendations from basket analysis
        │
-       ├── SentimentPredictor (fine-tuned BERT, `sentiment_model/saved_model/`)
-       ├── SalesAnalyticsEngine (STL + ARIMA, `sales_model/sales_data.csv`)
-       └── BasketAnalysisEngine (co-occurrence, `sales_model/basket_data.csv`)
+       ├── SentimentPredictor (fine-tuned DistilBERT, `sentiment_model/saved_model/`)
+       ├── SalesAnalyticsEngine (Facebook Prophet, `sales_model/sales_data.csv`)
+       └── BasketAnalysisEngine (FP-Growth, `sales_model/basket_data.csv`)
 ```
 
 All API endpoints are **shop-scoped** — the JWT token encodes the shop name, and every endpoint filters data to only that shop. The admin account (shop = `"All"`) sees aggregate data across all outlets.
@@ -86,8 +86,8 @@ BrewAnalytics/
 │       └── nlp_service.py          # BERT predictor singleton + aspect keyword map
 │
 ├── sales_model/                    # Sales & basket ML models
-│   ├── sales_model.py              # SalesAnalyticsEngine (STL + ARIMA)
-│   ├── basket_model.py             # BasketAnalysisEngine (co-occurrence MBA)
+│   ├── sales_model.py              # SalesAnalyticsEngine (Prophet)
+│   ├── basket_model.py             # BasketAnalysisEngine (FP-Growth MBA)
 │   ├── generate_sales_data.py      # Synthetic sales data generator
 │   ├── sales_data.csv              # Main sales dataset (~11 MB)
 │   ├── basket_data.csv             # Transaction basket dataset (~7 MB)
@@ -127,8 +127,8 @@ BrewAnalytics/
 │   │       ├── SentimentAnalysis.tsx  # Review & sentiment dashboard
 │   │       ├── AspectAnalysis.tsx     # Aspect-based sentiment breakdown
 │   │       ├── SalesAnalytics.tsx     # Revenue & transaction KPIs
-│   │       ├── SalesForecasting.tsx   # STL+ARIMA forecast visualizations
-│   │       ├── MarketBasket.tsx       # MBA rules / top pairs / bundles
+│   │       ├── SalesForecasting.tsx   # Prophet forecast visualizations
+│   │       ├── MarketBasket.tsx       # FP-Growth rules / top pairs / bundles
 │   │       ├── CompetitorAnalysis.tsx # Benchmarking vs. other outlets
 │   │       ├── Recommendations.tsx    # Actionable recommendations panel
 │   │       ├── Reports.tsx            # Report generation page
@@ -400,49 +400,37 @@ Returns all data needed for the Sales Analytics dashboard:
 
 #### Forecasting (`get_forecast(horizon_days=90)`)
 
-**Algorithm: STL Decomposition + ARIMA(1,1,1)**
+**Algorithm: Facebook Prophet Additive Model**
 
-**Step 1 — STL Decomposition (Seasonal-Trend decomposition using LOESS):**
+**Step 1 — Model Fitting:**
 ```python
-stl = STL(series, period=7, robust=True)
-result = stl.fit()
-trend    = result.trend     # smooth long-run revenue trend
-seasonal = result.seasonal  # repeating 7-day weekly pattern
-residuals = result.resid    # noise / unexplained variance
+model = Prophet(
+    yearly_seasonality=True,
+    weekly_seasonality=True,
+    daily_seasonality=False,
+    changepoint_prior_scale=0.05,
+    interval_width=0.95
+)
+model.fit(prophet_df)
 ```
-- `period=7` captures the weekly cyclicality (weekday/weekend differences).
-- `robust=True` reduces the influence of outliers on the trend fit.
+- Fits an additive time-series model handling weekly and yearly seasonality natively.
+- Handles missing data and holidays gracefully.
+- `interval_width=0.95` computes 95% Bayesian uncertainty intervals.
 
-**Step 2 — ARIMA(1,1,1) on Trend:**
+**Step 2 — Generate Forecast:**
 ```python
-model = ARIMA(trend, order=(1, 1, 1))
-fitted = model.fit()
-fc = fitted.get_forecast(steps=horizon_days)
-```
-- AR(1): autoregressive component (current value depends on 1 lag).
-- I(1): first-order differencing — removes non-stationarity from growing revenue.
-- MA(1): moving-average component — smooths residual shocks.
-- 95% confidence intervals computed via `fc.conf_int(alpha=0.05)`.
-- **Fallback:** If ARIMA fails to converge, switches to degree-2 polynomial regression with 1.96σ bands.
-
-**Step 3 — Reconstruct Forecast:**
-```python
-seasonal_cycle = seasonal[-7:].values  # last observed 7-day seasonality pattern
-seasonal_ext   = np.tile(seasonal_cycle, ceil(horizon / 7))[:horizon]
-final_forecast = trend_forecast + seasonal_ext
+future = model.make_future_dataframe(periods=horizon_days)
+forecast = model.predict(future)
 ```
 Forecast values are clipped to ≥ 0 (revenue cannot be negative).
 
-**Step 4 — MAPE Approximation:**
-```python
-mape = (residual_std / avg_daily_revenue) * 100
-model_confidence = max(0, min(100, 100 - mape))
-```
+**Step 3 — MAPE Approximation:**
+Calculated using standard deviation of historical residuals vs average daily revenue.
 
 **Additional Outputs:**
 - `weekly_seasonality`: Normalized index by day-of-week (100 = average weekday).
 - `monthly_seasonality`: Monthly index identifying peak months (≥ 115) and low months (≤ 85).
-- `outlet_forecasts`: Per-outlet 30-day ARIMA(1,1,0) projections using last 90 days of data.
+- `outlet_forecasts`: Per-outlet 30-day Prophet projections using last 90 days of data.
 - `item_demand_forecast`: Momentum-based item demand: `forecast = current * (1 + (current - prev) / prev)`.
 
 ---
@@ -451,36 +439,40 @@ model_confidence = max(0, min(100, 100 - mape))
 
 **Class:** `BasketAnalysisEngine`
 
-**Algorithm: Pure Co-occurrence (no external Apriori library needed)**
+**Algorithm: FP-Growth (via mlxtend)**
 
 **Step 1 — Load & Filter:**
 Loads `basket_data.csv` and filters to the shop using the same 3-way match.
 
-**Step 2 — Build Item & Pair Counts:**
+**Step 2 — Encode Transactions:**
 ```python
-txn_items = df.groupby("transaction_id")["item"].apply(list)
-for items in txn_items:
-    unique = set(items)
-    for item in unique:
-        item_counts[item] += 1
-    for pair in combinations(sorted(unique), 2):
-        pair_counts[pair] += 1
+from mlxtend.preprocessing import TransactionEncoder
+te = TransactionEncoder()
+te_array = te.fit(txn_lists).transform(txn_lists)
+txn_df = pd.DataFrame(te_array, columns=te.columns_)
 ```
 
-**Step 3 — Compute Association Rule Metrics:**
-For each `(A, B)` pair:
+**Step 3 — FP-Growth Frequent Itemsets:**
+```python
+frequent_itemsets = fpgrowth(txn_df, min_support=0.01, use_colnames=True)
+```
+Extracts all frequent item combinations occurring in at least 1% of transactions.
 
-| Metric | Formula |
+**Step 4 — Association Rules Extraction:**
+```python
+rules_df = association_rules(frequent_itemsets, metric="lift", min_threshold=1.0)
+```
+Filtered to 1-to-1 rules (e.g. A → B).
+
+| Metric | Description |
 |---|---|
-| Support | `count(A ∩ B) / total_transactions` |
-| Confidence A→B | `count(A ∩ B) / count(A)` |
-| Confidence B→A | `count(A ∩ B) / count(B)` |
-| Lift | `support / (P(A) × P(B))` |
+| Support | % of total transactions containing both items |
+| Confidence | Probability of buying B given A is bought |
+| Lift | How much more likely B is bought given A compared to random chance |
+| Conviction | Measure of dependence between A and B |
 
-Both directions `A → B` and `B → A` are generated as separate rules.
-
-**Step 4 — Rule Filtering & Ranking:**
-Rules sorted by `lift × confidence` descending. Top 20 rules returned.
+**Step 5 — Rule Filtering & Ranking:**
+Rules sorted by `lift` descending. Top 20 rules returned.
 
 **Step 5 — Bundle Suggestions:**
 Deduplicates rules into item-pair bundles (up to 3), formatted as `"Item A + Item B Bundle"`.
@@ -757,17 +749,17 @@ sales.py → get_engine(shop) [cached per session]
 |---|---|---|
 | Password hashing | bcrypt via `passlib` | `auth_utils.py` |
 | JWT authentication | HS256 via `python-jose` | `auth_utils.py` |
-| Sentiment classification | Fine-tuned `bert-base-uncased` (3-class) | `sentiment_model/` |
-| BERT inference | Tokenize → forward → softmax → argmax | `predict_sentiment.py` |
+| Sentiment classification | Fine-tuned `distilbert-base-uncased` (3-class) | `sentiment_model/` |
+| DistilBERT inference | Tokenize → forward → softmax → argmax | `predict_sentiment.py` |
 | Aspect detection | Dictionary keyword matching (4 categories) | `nlp_service.py` |
 | Word cloud sizing | Min-max normalization [20, 50] font range | `sentiment.py` |
-| Sales forecasting | STL decomposition + ARIMA(1,1,1) | `sales_model.py` |
-| ARIMA fallback | Degree-2 polynomial regression | `sales_model.py` |
+| Sales forecasting | Facebook Prophet Additive Model | `sales_model.py` |
+| Prophet fallback | Linear extrapolation (for small outlet data) | `sales_model.py` |
 | Model accuracy proxy | MAPE via `resid_std / avg_revenue` | `sales_model.py` |
 | Item demand forecast | Momentum-based linear extrapolation | `sales_model.py` |
-| Market basket analysis | Pure co-occurrence counting | `basket_model.py` |
-| Association rule metrics | Support, Confidence, Lift formulas | `basket_model.py` |
-| Rule ranking | Sort by `lift × confidence` descending | `basket_model.py` |
+| Market basket analysis | FP-Growth (`mlxtend`) | `basket_model.py` |
+| Association rule metrics | Support, Confidence, Lift, Conviction | `basket_model.py` |
+| Rule ranking | Sort by `lift` descending | `basket_model.py` |
 | Competitor rating | `min(5.0, 3.5 + demand/200)` synthetic calc | `sales.py` |
 | Shop fuzzy matching | 3-way: exact → substring → reverse substring | `sales_model.py`, `basket_model.py` |
 | Sentiment neutralization | Override if `|pos_score - neg_score| < 0.05` | `sentiment.py` |

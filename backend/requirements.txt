@@ -2,7 +2,7 @@ fastapi
 uvicorn
 pandas
 scikit-learn
-statsmodels
+prophet
 transformers
 torch
 python-multipart
@@ -10,3 +10,4 @@ openpyxl
 pydantic
 python-jose[cryptography]
 passlib[bcrypt]
+mlxtend

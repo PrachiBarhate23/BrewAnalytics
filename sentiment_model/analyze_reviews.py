@@ -12,7 +12,7 @@ This is the MAIN OUTPUT script. It:
 import os
 import torch
 import pandas as pd
-from transformers import BertTokenizer, BertForSequenceClassification
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 from collections import Counter
 import warnings
 warnings.filterwarnings("ignore")
@@ -57,10 +57,10 @@ class SentimentClassifier:
     """Loads trained BERT and classifies review text."""
 
     def __init__(self):
-        print("  Loading trained BERT model...")
+        print("  Loading trained DistilBERT model...")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.tokenizer = BertTokenizer.from_pretrained(MODEL_DIR)
-        self.model = BertForSequenceClassification.from_pretrained(MODEL_DIR).to(self.device)
+        self.tokenizer = DistilBertTokenizer.from_pretrained(MODEL_DIR)
+        self.model = DistilBertForSequenceClassification.from_pretrained(MODEL_DIR).to(self.device)
         self.model.eval()
         print(f"  Model loaded on {self.device}")
 
@@ -149,7 +149,7 @@ def generate_suggestions(shop: str, pos_pct: float, neg_pct: float,
 def main():
     print("=" * 70)
     print("  BrewAnalytics - Review Analysis & Seller Suggestions")
-    print("  (BERT classifies reviews -> generates insights for sellers)")
+    print("  (DistilBERT classifies reviews -> generates insights for sellers)")
     print("=" * 70)
 
     # Check prerequisites

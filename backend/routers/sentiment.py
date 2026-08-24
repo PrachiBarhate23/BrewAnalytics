@@ -282,7 +282,7 @@ def predict_sentiment_live(req: ReviewRequest):
         result["sentiment"] = "Neutral"
 
     aspects = extract_aspects(req.text)
-    print(f"🔍  Live predict: '{req.text[:60]}...' → {result['sentiment']} ({round(result['confidence']*100,1)}%)")
+    print(f"🔍  Live predict (DistilBERT): '{req.text[:60]}...' → {result['sentiment']} ({round(result['confidence']*100,1)}%)")
 
     return {
         "text":       req.text,

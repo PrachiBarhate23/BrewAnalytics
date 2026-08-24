@@ -275,10 +275,10 @@ export function SentimentAnalysis() {
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Activity className="w-5 h-5 text-[#6F4E37]" />
-          Live AI Sentiment Prediction (BERT Model)
+          Live AI Sentiment Prediction (DistilBERT Model)
         </h3>
         <p className="text-sm text-gray-600 mb-4">
-          Type or paste a customer review below to test the fine-tuned BERT sentiment model in real-time.
+          Type or paste a customer review below to test the fine-tuned DistilBERT sentiment model in real-time.
         </p>
         
         <div className="flex gap-3 mb-4">

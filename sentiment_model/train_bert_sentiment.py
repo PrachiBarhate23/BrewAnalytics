@@ -1,7 +1,7 @@
 """
-BrewAnalytics - BERT Sentiment Analysis Training
-=================================================
-Fine-tunes bert-base-uncased for 3-class sentiment classification.
+BrewAnalytics - DistilBERT Sentiment Analysis Training
+======================================================
+Fine-tunes distilbert-base-uncased for 3-class sentiment classification.
 
 KEY: The model learns sentiment from RATINGS, not pre-labeled sentiments.
 - Rating 4-5 → Positive
@@ -17,17 +17,17 @@ import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers import BertTokenizer, BertForSequenceClassification, get_linear_schedule_with_warmup
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification, get_linear_schedule_with_warmup
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 import warnings
 warnings.filterwarnings("ignore")
 
 # ─── Configuration ───────────────────────────────────────────────────────────
-MODEL_NAME = "bert-base-uncased"
+MODEL_NAME = "distilbert-base-uncased"
 MAX_LENGTH = 128
 BATCH_SIZE = 16
-EPOCHS = 1
+EPOCHS = 3
 LEARNING_RATE = 2e-5
 RANDOM_SEED = 42
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -128,7 +128,7 @@ def eval_model(model, loader, device):
 
 def main():
     print("=" * 60)
-    print("  BrewAnalytics - BERT Training Pipeline")
+    print("  BrewAnalytics - DistilBERT Training Pipeline")
     print("  (Learning sentiment from ratings)")
     print("=" * 60)
 
@@ -169,13 +169,13 @@ def main():
 
     # ─── Tokenizer and model ────────────────────────────────────────────
     print(f"\n  Loading {MODEL_NAME}...")
-    tokenizer = BertTokenizer.from_pretrained(MODEL_NAME)
+    tokenizer = DistilBertTokenizer.from_pretrained(MODEL_NAME)
 
     train_loader = DataLoader(ReviewDataset(X_train, y_train, tokenizer, MAX_LENGTH), batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(ReviewDataset(X_val, y_val, tokenizer, MAX_LENGTH), batch_size=BATCH_SIZE)
     test_loader = DataLoader(ReviewDataset(X_test, y_test, tokenizer, MAX_LENGTH), batch_size=BATCH_SIZE)
 
-    model = BertForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=3, id2label=ID2LABEL, label2id=LABEL2ID)
+    model = DistilBertForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=3, id2label=ID2LABEL, label2id=LABEL2ID)
     model = model.to(device)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.01)
@@ -206,7 +206,7 @@ def main():
     print("\n" + "=" * 60)
     print("  Test Results")
     print("=" * 60)
-    model = BertForSequenceClassification.from_pretrained(SAVE_DIR).to(device)
+    model = DistilBertForSequenceClassification.from_pretrained(SAVE_DIR).to(device)
     test_loss, test_acc, preds, labels_true = eval_model(model, test_loader, device)
     print(f"\n  Test Accuracy: {test_acc:.4f}")
     print(f"\n{classification_report(labels_true, preds, target_names=['Positive','Neutral','Negative'])}")
